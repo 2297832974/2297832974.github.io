@@ -144,12 +144,19 @@ class _RobloxHeader extends StatelessWidget {
           ),
           Expanded(
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _HeaderTab(label: 'Charts', isCompact: isCompact),
-                _HeaderTab(label: 'Marketplace', isCompact: isCompact),
-                _HeaderTab(label: 'Create', isCompact: isCompact),
-                _HeaderTab(label: 'Robux', isCompact: isCompact),
+                Expanded(
+                  child: _HeaderTab(label: 'Charts', isCompact: isCompact),
+                ),
+                Expanded(
+                  child: _HeaderTab(label: 'Marketplace', isCompact: isCompact),
+                ),
+                Expanded(
+                  child: _HeaderTab(label: 'Create', isCompact: isCompact),
+                ),
+                Expanded(
+                  child: _HeaderTab(label: 'Robux', isCompact: isCompact),
+                ),
               ],
             ),
           ),
@@ -168,12 +175,18 @@ class _HeaderTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: const Color(0xFF2A2D34),
-        fontSize: isCompact ? 14 : 18,
-        fontWeight: FontWeight.w500,
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: const Color(0xFF2A2D34),
+            fontSize: isCompact ? 13 : 18,
+            fontWeight: FontWeight.w500,
+          ),
+          maxLines: 1,
+        ),
       ),
     );
   }
@@ -261,31 +274,39 @@ class _RobuxAccountStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            key: const Key('home-balance-trigger'),
-            behavior: HitTestBehavior.opaque,
-            onSecondaryTap: enableSecondaryTap ? onEditBalanceRequested : null,
-            onLongPress: onEditBalanceRequested,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _RobuxCurrencyIcon(
-                  size: isCompact ? 28 : 34,
-                  color: const Color(0xFF20232B),
-                ),
-                SizedBox(width: isCompact ? 7 : 9),
-                Text(
-                  _formatCompactRobuxBalance(robuxBalance),
-                  style: TextStyle(
+          Expanded(
+            child: GestureDetector(
+              key: const Key('home-balance-trigger'),
+              behavior: HitTestBehavior.opaque,
+              onSecondaryTap:
+                  enableSecondaryTap ? onEditBalanceRequested : null,
+              onLongPress: onEditBalanceRequested,
+              child: Row(
+                children: [
+                  _RobuxCurrencyIcon(
+                    size: isCompact ? 28 : 34,
                     color: const Color(0xFF20232B),
-                    fontSize: isCompact ? 20 : 25,
-                    fontWeight: FontWeight.w900,
                   ),
-                ),
-              ],
+                  SizedBox(width: isCompact ? 7 : 9),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _formatCompactRobuxBalance(robuxBalance),
+                        style: TextStyle(
+                          color: const Color(0xFF20232B),
+                          fontSize: isCompact ? 20 : 25,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Spacer(),
+          SizedBox(width: isCompact ? 10 : 16),
           InkWell(
             key: const Key('open-send-dialog-button'),
             onTap: onSendPressed,

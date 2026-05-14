@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:token_buy/app/token_buy_app.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   testWidgets('shows restored app surface without frame controls', (
     WidgetTester tester,
   ) async {
@@ -137,6 +140,10 @@ void main() {
   testWidgets('send shows success toast and returns to hidden home', (
     WidgetTester tester,
   ) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(const TokenBuyApp());
 
     await tester.longPress(find.byKey(const Key('home-balance-trigger')));
@@ -168,6 +175,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('You sent 5,000 Robux'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
     expect(find.text('Send Robux'), findsNothing);
 
     await tester.pump(const Duration(milliseconds: 950));
@@ -191,6 +199,32 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('mobile amount dialog stays usable with keyboard insets', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(const TokenBuyApp());
+
+    await tester.tap(find.byKey(const Key('open-send-dialog-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('username-input')), 'ktz');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('friend-row-friend-ktz')));
+    await tester.pumpAndSettle();
+
+    tester.view.viewInsets = const FakeViewPadding(bottom: 1008);
+    addTearDown(() {
+      tester.view.viewInsets = FakeViewPadding.zero;
+    });
+    await tester.pump();
+
+    expect(find.byKey(const Key('amount-input')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('send is disabled when balance is insufficient', (

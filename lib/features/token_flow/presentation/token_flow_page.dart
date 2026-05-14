@@ -682,7 +682,10 @@ class _VideoAppSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 430;
+    final toastTop = isCompact ? 82.0 : 92.0;
+    final toastWidth = math.min(228.0, math.max(140.0, screenWidth - 44));
 
     return Container(
       decoration: BoxDecoration(
@@ -703,12 +706,18 @@ class _VideoAppSurface extends StatelessWidget {
               child: Container(color: Colors.black.withValues(alpha: 0.26)),
             ),
           if (showSuccessToast)
-            Positioned(
-              left: 182,
-              right: 182,
-              top: 92,
-              child: _SuccessToast(
-                amount: _formatRobuxAmount(amountController.text),
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(top: toastTop, left: 22, right: 22),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: toastWidth),
+                    child: _SuccessToast(
+                      amount: _formatRobuxAmount(amountController.text),
+                    ),
+                  ),
+                ),
               ),
             ),
           if (stage != _SendStage.hidden)
@@ -797,10 +806,24 @@ class _DialogOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final mediaQuery = MediaQuery.of(context);
+    final isCompact = mediaQuery.size.width < 430;
+    final keyboardInset = mediaQuery.viewInsets.bottom;
+    final screenHeight = mediaQuery.size.height;
     final horizontalInset = isCompact ? 16.0 : 0.0;
-    final searchTopPadding = isCompact ? 316.0 : 360.0;
+    final searchBaseTopPadding = isCompact ? 316.0 : 360.0;
     final searchMaxHeight = isCompact ? 432.0 : 520.0;
+    final searchTopPadding = _resolveDialogTopPadding(
+      screenHeight: screenHeight,
+      keyboardInset: keyboardInset,
+      baseTopPadding: searchBaseTopPadding,
+      estimatedDialogHeight: searchMaxHeight,
+      minimumTopPadding: isCompact ? 88.0 : 140.0,
+    );
+    final searchResolvedMaxHeight = math.min(
+      searchMaxHeight,
+      math.max(isCompact ? 220.0 : 280.0, screenHeight - searchTopPadding - 16),
+    );
 
     final dialog = _SendRobuxDialog(
       stage: stage,
@@ -837,7 +860,7 @@ class _DialogOverlay extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: 470,
-                maxHeight: searchMaxHeight,
+                maxHeight: searchResolvedMaxHeight,
               ),
               child: _AnimatedDialogShell(stage: stage, child: dialog),
             ),
@@ -846,28 +869,67 @@ class _DialogOverlay extends StatelessWidget {
       );
     }
 
-    final topPadding =
+    final baseTopPadding =
         stage == _SendStage.amount
             ? (isCompact ? 360.0 : 390.0)
             : (isCompact ? 386.0 : 420.0);
+    final estimatedDialogHeight =
+        stage == _SendStage.amount
+            ? (isCompact ? 234.0 : 258.0)
+            : (isCompact ? 220.0 : 244.0);
+    final topPadding = _resolveDialogTopPadding(
+      screenHeight: screenHeight,
+      keyboardInset: keyboardInset,
+      baseTopPadding: baseTopPadding,
+      estimatedDialogHeight: estimatedDialogHeight,
+      minimumTopPadding: isCompact ? 84.0 : 140.0,
+    );
 
     return Positioned.fill(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: topPadding,
-            left: horizontalInset,
-            right: horizontalInset,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: dialog,
-          ),
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.only(
+              top: topPadding,
+              left: horizontalInset,
+              right: horizontalInset,
+              bottom: 16,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: math.max(0, constraints.maxHeight - topPadding - 16),
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: dialog,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+double _resolveDialogTopPadding({
+  required double screenHeight,
+  required double keyboardInset,
+  required double baseTopPadding,
+  required double estimatedDialogHeight,
+  required double minimumTopPadding,
+}) {
+  final keyboardShift = math.min(
+    keyboardInset * 0.42,
+    math.max(0, baseTopPadding - minimumTopPadding),
+  );
+  final availableTopPadding = screenHeight - estimatedDialogHeight - 16;
+  return math.min(
+    baseTopPadding - keyboardShift,
+    math.max(minimumTopPadding, availableTopPadding),
+  );
 }
 
 class _AnimatedDialogShell extends StatelessWidget {

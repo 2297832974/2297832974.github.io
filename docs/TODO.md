@@ -77,3 +77,5 @@
 - Current mobile dialog spacing: narrow screens now add dedicated horizontal dialog inset padding so the Send Robux sheets no longer sit too tightly against the viewport edges.
 - Current public deployment: the repository now includes `.github/workflows/deploy-pages.yml`, so pushes to `main` build Flutter web and publish the result to `https://2297832974.github.io/`.
 - Current edit interaction: web now uses long-press for balance and friend management, while desktop app builds keep the same flows plus right-click as a shortcut.
+- Current mobile toast behavior: the success toast now uses a compact-device width constraint instead of desktop-only side insets, so phones keep the full `You sent ... Robux` copy visible instead of collapsing to the check icon.
+- Current keyboard avoidance: the Send Robux overlays now reduce their top offset against `MediaQuery.viewInsets.bottom`, so amount and search dialogs shift upward when a mobile keyboard opens instead of being covered.
