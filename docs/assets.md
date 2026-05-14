@@ -7,10 +7,11 @@
 - Video assets root: `assets/videos/`
 - Token video source: `assets/videos/token.mp4`
 - Token keyframe output: `assets/images/token-frames/`
+- Dense token frame output: `assets/images/token-frames-dense/`
 
 ## Token Keyframes
 
-The `token.mp4` video is split into a small set of keyframes for app reconstruction instead of exporting dense time-based frames.
+The `token.mp4` video is split into ordered keyframes for gradual UI restoration instead of exporting dense time-based frames.
 
 Current exported keyframes:
 
@@ -27,12 +28,22 @@ Current exported keyframes:
 - `11-amount-filled.jpg`
 - `12-confirmation.jpg`
 
+## Dense Reference Frames
+
+The dense frame set is used when the curated `12` keyframes are too coarse for restoration decisions.
+
+- Directory: `assets/images/token-frames-dense/`
+- Current count: `34`
+- Extraction cadence: `1` frame per second
+- Naming pattern: `frame_01.jpg` through `frame_34.jpg`
+
 ## Selection Strategy
 
-- Keep the frame count low enough for design consumption.
-- Preserve the main UI state transitions needed to rebuild the flow.
+- Keep the frame count low enough for early restoration work.
+- Preserve the visible UI state transitions needed to rebuild the video effect.
 - Prefer representative state changes over evenly spaced timestamps.
-- The current baseline uses `12` keyframes so the main flow can be rebuilt without dense frame extraction.
+- The current baseline uses `12` keyframes as the first calibration set; more frames can be extracted later when the restoration needs finer visual timing.
+- Use the dense `1fps` set for gap audits and state discovery; keep the curated set for high-signal implementation anchors.
 
 ## Path Strategy
 

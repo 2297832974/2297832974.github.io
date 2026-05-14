@@ -18,13 +18,14 @@ Flutter starter project for `windows`, `ios`, and `macos`.
 ## Getting Started
 
 ```bash
-cd /Users/sunqin/study/language/dart/code/token-buy
+cd token-buy
 flutter run
 ```
 
 ## Documentation
 
 - [TODO](docs/TODO.md)
-- [Token flow plan](docs/token-flow-plan.md)
+- [Video UI restoration plan](docs/video-ui-restoration-plan.md)
+- [Video UI gap audit](docs/video-ui-gap-audit.md)
 - [Project baseline](docs/project-baseline.md)
 - [Assets guide](docs/assets.md)

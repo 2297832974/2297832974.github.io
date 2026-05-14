@@ -14,7 +14,7 @@
 ## Creation Command
 
 ```bash
-flutter --no-version-check create --offline --project-name token_buy --platforms=windows,ios,macos /Users/sunqin/study/language/dart/code/token-buy
+flutter --no-version-check create --offline --project-name token_buy --platforms=windows,ios,macos .
 ```
 
 ## Notes
@@ -26,6 +26,6 @@ flutter --no-version-check create --offline --project-name token_buy --platforms
 ## Quick Start
 
 ```bash
-cd /Users/sunqin/study/language/dart/code/token-buy
+cd token-buy
 flutter run
 ```
