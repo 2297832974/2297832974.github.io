@@ -6,7 +6,22 @@
 build/
 .idea/
 .vscode/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Flutter platform ephemeral outputs (Windows side commonly dirties these)
+windows/flutter/ephemeral/
+macos/Flutter/ephemeral/
+ios/Flutter/ephemeral/
+linux/flutter/ephemeral/
+android/.gradle/
+android/local.properties
+
+# CocoaPods (if generated locally on either side)
+ios/Pods/
+macos/Pods/
+**/.symlinks/
 
 **/*.log
 .DS_Store
-
