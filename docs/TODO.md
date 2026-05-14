@@ -32,6 +32,7 @@
 - [x] Rework the Robux home background toward the referenced Roblox Robux page header, balance strip, hero, and package list
 - [x] Rebuild the selected-user amount sheet to match the reference layout more closely
 - [x] Remove avatar rendering from the Send Robux flow, friends list, and search results
+- [x] Add an acceptance guardrail: lock the app after 2 hours from the first launch on a device
 
 ## Next
 
@@ -45,10 +46,14 @@
 - The current UI is a baseline restoration scaffold, not the final polished product.
 - The first milestone is visible composition parity with the video, then gradual frame-by-frame refinement.
 - Current audit says the implementation is still rough and misses multiple visible states from the dense frame set.
+- Current typography: the app uses the bundled `Montserrat` font family as a Gotham-like stand-in to reduce the font-shape gap vs the reference capture.
+- Windows sync: the repo is shared to the Windows build machine via Syncthing folder id `token-buy-src` and uses `.stignore` to exclude generated artifacts and `.git/`.
 - Current entry behavior: the app starts on the Robux home page; the custom Send Robux dialog is opened from the top-right `Send` button and closes back to the home page.
+- Current search dialog layout: the friends/search entry now uses a centered compact card with a fixed scrollable results region instead of the earlier full-height sheet.
 - Current friend behavior: the search sheet starts with built-in friends, unknown usernames render as blank-avatar non-friend results, and the friends area supports right-click add/edit/delete flows.
-- Current search fallback: normal typing only matches saved friends, while pressing `Enter` injects the current input as the top temporary result when needed.
+- Current search fallback: normal typing only matches saved friends, while pressing `Enter` generates a cached random result list of `1-20` items with the first item forced to be the current match.
 - Current amount-stage behavior: after selecting a user, the sheet now switches to a centered avatar/name layout with a dedicated amount field, quick Robux chips, and a full-width primary `Next` button.
 - Current avatar rule: the Send Robux flow, friend rows, and search results now render without avatars.
 - Current balance behavior: the home/header Robux balance is shared state, supports right-click editing, and drops by the sent amount after each successful send.
 - Current guardrail: the confirm step disables `Send` when balance is insufficient and shows how much additional Robux is needed.
+- Acceptance guardrail: the app is time-locked after 2 hours from the first launch on a device. See `docs/app-lock.md`.

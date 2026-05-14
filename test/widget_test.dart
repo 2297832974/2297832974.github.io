@@ -74,6 +74,28 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('friend-row-search-zznone')), findsOneWidget);
+      final submittedRows = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith('friend-row-'),
+      );
+      final submittedRowCount = submittedRows.evaluate().length;
+      expect(submittedRowCount, greaterThanOrEqualTo(1));
+      expect(submittedRowCount, lessThanOrEqualTo(20));
+
+      final topMatchPosition = tester.getTopLeft(
+        find.byKey(const Key('friend-row-search-zznone')),
+      );
+      for (final element in submittedRows.evaluate()) {
+        final widget = element.widget;
+        final key = widget.key;
+        if (key is ValueKey<String> &&
+            key.value == 'friend-row-search-zznone') {
+          continue;
+        }
+        final position = tester.getTopLeft(find.byWidget(widget));
+        expect(position.dy, greaterThanOrEqualTo(topMatchPosition.dy));
+      }
 
       await tester.enterText(find.byKey(const Key('username-input')), 'sonic');
       await tester.pump();
@@ -86,7 +108,7 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('friend-row-search-sonic')), findsOneWidget);
-      expect(find.text('SonicBacon'), findsWidgets);
+      expect(find.byKey(const Key('friend-row-friend-sonic')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('friend-row-friend-sonic')));
       await tester.pump();

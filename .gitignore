@@ -34,6 +34,9 @@ migrate_working_dir/
 /build/
 **/DerivedData/
 
+# Syncthing marker file (created when this repo is shared as a Syncthing folder)
+.stfolder
+
 # Symbolication related
 app.*.symbols
 

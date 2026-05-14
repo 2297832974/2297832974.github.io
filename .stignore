@@ -1,0 +1,12 @@
+// Syncthing ignore rules for syncing this repo to Windows build machine.
+// Keep the sync payload small and deterministic.
+
+.git/
+.dart_tool/
+build/
+.idea/
+.vscode/
+
+**/*.log
+.DS_Store
+

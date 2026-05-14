@@ -26,7 +26,8 @@
 - Excluded overlay: the top creator bubble, video caption text, and phone status/recording strip are not part of the app feature and should not be restored.
 - Excluded overlay: the lower-right music playback card from the source video is not part of the app feature and should not be restored.
 - Background page: imitation of `https://www.roblox.com/upgrades/robux?ctx=navpopover`, including the Roblox-style top navigation, editable Robux balance strip, top-right `Send` action, product hero, and package rows.
-- Send dialog: bottom-raised sheet shell with bottom-up entrance animation, built-in friends list, right-click friend management, right-click editable shared balance, avatar-free friend/search rows, enter-to-insert temporary search fallback results, an avatar-free selected-user amount sheet, confirmation buttons, and insufficient-balance blocking.
+- Send dialog: compact centered friends/search card, built-in friends list, right-click friend management, right-click editable shared balance, avatar-free friend/search rows, enter-to-generate cached random `1-20` result lists with a guaranteed first-row match, an avatar-free selected-user amount sheet, confirmation buttons, and insufficient-balance blocking.
+- Typography: use the bundled `Montserrat` font family as a Gotham-like stand-in, then refine per-state font sizes/weights/letter-spacing against dense frames.
 - Component boundary: the Robux home page background lives in `lib/features/token_flow/presentation/widgets/robux_home_page.dart`; the token flow page owns modal state and dialog flow.
 
 ## Current Build Order

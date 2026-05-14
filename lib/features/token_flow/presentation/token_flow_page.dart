@@ -123,6 +123,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
   int _robuxBalance = 0;
   bool _showSuccessToast = false;
   String? _submittedSearchQuery;
+  List<_ReferenceUser> _submittedSearchResults = const [];
 
   String get _trimmedUsername => _usernameController.text.trim();
 
@@ -170,6 +171,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
                 showResults: _showResults,
                 submittedSearchQuery:
                     _hasCommittedSearch ? _submittedSearchQuery : null,
+                submittedSearchResults: _submittedSearchResults,
                 showSuccessToast: _showSuccessToast,
                 onUserSelected: _handleUserSelected,
                 onSearchSubmitted: _handleSearchSubmitted,
@@ -202,6 +204,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
 
     setState(() {
       _submittedSearchQuery = query;
+      _submittedSearchResults = _buildSubmittedSearchResults(query, _friends);
     });
   }
 
@@ -216,6 +219,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
       _selectedUser = user;
       _usernameController.text = user.name;
       _submittedSearchQuery = null;
+      _submittedSearchResults = const [];
       _stage = _SendStage.amount;
     });
   }
@@ -464,6 +468,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
       _selectedUser = _friends.isNotEmpty ? _friends.first : _seedFriends.first;
       _showSuccessToast = false;
       _submittedSearchQuery = null;
+      _submittedSearchResults = const [];
       _usernameController.clear();
       _amountController.clear();
     }
@@ -477,11 +482,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
   }
 }
 
-List<_ReferenceUser> _searchUsers(
-  String query,
-  List<_ReferenceUser> friends, {
-  bool includeSubmittedFallback = false,
-}) {
+List<_ReferenceUser> _searchUsers(String query, List<_ReferenceUser> friends) {
   final trimmed = query.trim();
   final normalized = trimmed.toLowerCase();
 
@@ -495,31 +496,93 @@ List<_ReferenceUser> _searchUsers(
         return searchable.contains(normalized);
       }).toList();
 
-  if (!includeSubmittedFallback) {
-    return friendMatches;
+  return friendMatches;
+}
+
+List<_ReferenceUser> _buildSubmittedSearchResults(
+  String query,
+  List<_ReferenceUser> friends,
+) {
+  final trimmed = query.trim();
+  final normalized = trimmed.toLowerCase();
+
+  if (normalized.isEmpty) {
+    return const [];
   }
 
+  final random = math.Random();
+  final totalCount = random.nextInt(20) + 1;
+  final friendMatches = _searchUsers(trimmed, friends);
   final hasExactFriendMatch = friendMatches.any((friend) {
     final normalizedHandle = friend.handle.replaceFirst('@', '').toLowerCase();
     return friend.name.toLowerCase() == normalized ||
         normalizedHandle == normalized;
   });
 
-  if (hasExactFriendMatch) {
-    return friendMatches;
+  final topMatch =
+      hasExactFriendMatch
+          ? friendMatches.firstWhere((friend) {
+            final normalizedHandle =
+                friend.handle.replaceFirst('@', '').toLowerCase();
+            return friend.name.toLowerCase() == normalized ||
+                normalizedHandle == normalized;
+          })
+          : _ReferenceUser(
+            id: 'search-$normalized',
+            name: trimmed,
+            handle: '@$normalized',
+            avatarColor: const Color(0xFFE7EAF1),
+            hasAvatar: false,
+            isFriend: false,
+          );
+
+  final results = <_ReferenceUser>[topMatch];
+  final usedIds = <String>{topMatch.id};
+
+  for (final friend in friendMatches) {
+    if (results.length >= totalCount) {
+      break;
+    }
+    if (usedIds.add(friend.id)) {
+      results.add(friend);
+    }
   }
 
-  return [
-    _ReferenceUser(
-      id: 'search-$normalized',
-      name: trimmed,
-      handle: '@$normalized',
-      avatarColor: const Color(0xFFE7EAF1),
+  while (results.length < totalCount) {
+    final suffix = random.nextInt(9000) + 1000;
+    final baseName = _randomSearchName(random);
+    final candidateName = '$trimmed$baseName$suffix';
+    final candidate = _ReferenceUser(
+      id: 'search-$normalized-$suffix-${results.length}',
+      name: candidateName,
+      handle: '@${candidateName.toLowerCase()}',
+      avatarColor: _avatarPalette[random.nextInt(_avatarPalette.length)],
       hasAvatar: false,
       isFriend: false,
-    ),
-    ...friendMatches,
+    );
+
+    if (usedIds.add(candidate.id)) {
+      results.add(candidate);
+    }
+  }
+
+  return results;
+}
+
+String _randomSearchName(math.Random random) {
+  const parts = [
+    'Galaxy',
+    'Nova',
+    'Trade',
+    'Builder',
+    'Boost',
+    'Pixel',
+    'Quest',
+    'Storm',
+    'Ultra',
+    'Vault',
   ];
+  return parts[random.nextInt(parts.length)];
 }
 
 String _formatRobuxAmount(String amount) {
@@ -566,6 +629,7 @@ class _VideoAppSurface extends StatelessWidget {
     required this.amountController,
     required this.showResults,
     required this.submittedSearchQuery,
+    required this.submittedSearchResults,
     required this.showSuccessToast,
     required this.onUserSelected,
     required this.onSearchSubmitted,
@@ -588,6 +652,7 @@ class _VideoAppSurface extends StatelessWidget {
   final TextEditingController amountController;
   final bool showResults;
   final String? submittedSearchQuery;
+  final List<_ReferenceUser> submittedSearchResults;
   final bool showSuccessToast;
   final ValueChanged<_ReferenceUser> onUserSelected;
   final VoidCallback onSearchSubmitted;
@@ -631,34 +696,26 @@ class _VideoAppSurface extends StatelessWidget {
               ),
             ),
           if (stage != _SendStage.hidden)
-            Positioned(
-              left: _dialogInsets(stage).left,
-              right: _dialogInsets(stage).right,
-              top: _dialogInsets(stage).top,
-              bottom: _dialogInsets(stage).bottom,
-              child: _AnimatedDialogShell(
-                stage: stage,
-                child: _SendRobuxDialog(
-                  stage: stage,
-                  selectedUser: selectedUser,
-                  friends: friends,
-                  robuxBalance: robuxBalance,
-                  usernameController: usernameController,
-                  amountController: amountController,
-                  showResults: showResults,
-                  submittedSearchQuery: submittedSearchQuery,
-                  onUserSelected: onUserSelected,
-                  onSearchSubmitted: onSearchSubmitted,
-                  onAddFriendRequested: onAddFriendRequested,
-                  onEditFriendRequested: onEditFriendRequested,
-                  onDeleteFriendRequested: onDeleteFriendRequested,
-                  onEditBalanceRequested: onEditBalanceRequested,
-                  onNext: onNext,
-                  onSend: onSend,
-                  onClose: onClose,
-                  onExit: onExit,
-                ),
-              ),
+            _DialogOverlay(
+              stage: stage,
+              selectedUser: selectedUser,
+              friends: friends,
+              robuxBalance: robuxBalance,
+              usernameController: usernameController,
+              amountController: amountController,
+              showResults: showResults,
+              submittedSearchQuery: submittedSearchQuery,
+              submittedSearchResults: submittedSearchResults,
+              onUserSelected: onUserSelected,
+              onSearchSubmitted: onSearchSubmitted,
+              onAddFriendRequested: onAddFriendRequested,
+              onEditFriendRequested: onEditFriendRequested,
+              onDeleteFriendRequested: onDeleteFriendRequested,
+              onEditBalanceRequested: onEditBalanceRequested,
+              onNext: onNext,
+              onSend: onSend,
+              onClose: onClose,
+              onExit: onExit,
             ),
           Positioned(
             left: 22,
@@ -685,33 +742,105 @@ class _VideoAppSurface extends StatelessWidget {
       ),
     );
   }
-
-  static _DialogInsets _dialogInsets(_SendStage stage) {
-    switch (stage) {
-      case _SendStage.search:
-        return const _DialogInsets(left: 18, right: 18, top: 102, bottom: 0);
-      case _SendStage.amount:
-        return const _DialogInsets(left: 28, right: 28, top: 286, bottom: 384);
-      case _SendStage.confirm:
-        return const _DialogInsets(left: 28, right: 28, top: 314, bottom: 406);
-      case _SendStage.hidden:
-        return const _DialogInsets();
-    }
-  }
 }
 
-class _DialogInsets {
-  const _DialogInsets({
-    this.left = 0,
-    this.right = 0,
-    this.top = 0,
-    this.bottom = 0,
+class _DialogOverlay extends StatelessWidget {
+  const _DialogOverlay({
+    required this.stage,
+    required this.selectedUser,
+    required this.friends,
+    required this.robuxBalance,
+    required this.usernameController,
+    required this.amountController,
+    required this.showResults,
+    required this.submittedSearchQuery,
+    required this.submittedSearchResults,
+    required this.onUserSelected,
+    required this.onSearchSubmitted,
+    required this.onAddFriendRequested,
+    required this.onEditFriendRequested,
+    required this.onDeleteFriendRequested,
+    required this.onEditBalanceRequested,
+    required this.onNext,
+    required this.onSend,
+    required this.onClose,
+    required this.onExit,
   });
 
-  final double left;
-  final double right;
-  final double top;
-  final double bottom;
+  final _SendStage stage;
+  final _ReferenceUser selectedUser;
+  final List<_ReferenceUser> friends;
+  final int robuxBalance;
+  final TextEditingController usernameController;
+  final TextEditingController amountController;
+  final bool showResults;
+  final String? submittedSearchQuery;
+  final List<_ReferenceUser> submittedSearchResults;
+  final ValueChanged<_ReferenceUser> onUserSelected;
+  final VoidCallback onSearchSubmitted;
+  final VoidCallback onAddFriendRequested;
+  final ValueChanged<_ReferenceUser> onEditFriendRequested;
+  final ValueChanged<_ReferenceUser> onDeleteFriendRequested;
+  final VoidCallback onEditBalanceRequested;
+  final VoidCallback onNext;
+  final VoidCallback onSend;
+  final VoidCallback onClose;
+  final VoidCallback onExit;
+
+  @override
+  Widget build(BuildContext context) {
+    final dialog = _SendRobuxDialog(
+      stage: stage,
+      selectedUser: selectedUser,
+      friends: friends,
+      robuxBalance: robuxBalance,
+      usernameController: usernameController,
+      amountController: amountController,
+      showResults: showResults,
+      submittedSearchQuery: submittedSearchQuery,
+      submittedSearchResults: submittedSearchResults,
+      onUserSelected: onUserSelected,
+      onSearchSubmitted: onSearchSubmitted,
+      onAddFriendRequested: onAddFriendRequested,
+      onEditFriendRequested: onEditFriendRequested,
+      onDeleteFriendRequested: onDeleteFriendRequested,
+      onEditBalanceRequested: onEditBalanceRequested,
+      onNext: onNext,
+      onSend: onSend,
+      onClose: onClose,
+      onExit: onExit,
+    );
+
+    if (stage == _SendStage.search) {
+      return Positioned.fill(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 360),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 470, maxHeight: 520),
+              child: _AnimatedDialogShell(stage: stage, child: dialog),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final topPadding = stage == _SendStage.amount ? 390.0 : 420.0;
+
+    return Positioned.fill(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.only(top: topPadding),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: dialog,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _AnimatedDialogShell extends StatelessWidget {
@@ -752,6 +881,7 @@ class _SendRobuxDialog extends StatelessWidget {
     required this.amountController,
     required this.showResults,
     required this.submittedSearchQuery,
+    required this.submittedSearchResults,
     required this.onUserSelected,
     required this.onSearchSubmitted,
     required this.onAddFriendRequested,
@@ -772,6 +902,7 @@ class _SendRobuxDialog extends StatelessWidget {
   final TextEditingController amountController;
   final bool showResults;
   final String? submittedSearchQuery;
+  final List<_ReferenceUser> submittedSearchResults;
   final ValueChanged<_ReferenceUser> onUserSelected;
   final VoidCallback onSearchSubmitted;
   final VoidCallback onAddFriendRequested;
@@ -789,14 +920,14 @@ class _SendRobuxDialog extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        isSearchStage ? 24 : 14,
-        isSearchStage ? 20 : 13,
-        isSearchStage ? 24 : 14,
-        isSearchStage ? 28 : 14,
+        isSearchStage ? 18 : 14,
+        isSearchStage ? 16 : 13,
+        isSearchStage ? 18 : 14,
+        isSearchStage ? 18 : 14,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(isSearchStage ? 22 : 13),
+        borderRadius: BorderRadius.circular(isSearchStage ? 20 : 13),
         boxShadow: const [
           BoxShadow(
             color: Color(0x44000000),
@@ -806,16 +937,16 @@ class _SendRobuxDialog extends StatelessWidget {
         ],
       ),
       child: Column(
-        mainAxisSize: isSearchStage ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _DialogHeader(
             onClose: onClose,
-            large: isSearchStage,
+            large: false,
             robuxBalance: robuxBalance,
             onEditBalanceRequested: onEditBalanceRequested,
           ),
-          SizedBox(height: isSearchStage ? 22 : 10),
+          SizedBox(height: isSearchStage ? 14 : 10),
           if (stage == _SendStage.search)
             Expanded(
               child: _SearchBody(
@@ -823,6 +954,7 @@ class _SendRobuxDialog extends StatelessWidget {
                 friends: friends,
                 showResults: showResults,
                 submittedSearchQuery: submittedSearchQuery,
+                submittedSearchResults: submittedSearchResults,
                 onUserSelected: onUserSelected,
                 onSearchSubmitted: onSearchSubmitted,
                 onAddFriendRequested: onAddFriendRequested,
@@ -880,8 +1012,10 @@ class _DialogHeader extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Color(0xFF1E222B),
-              fontSize: large ? 28 : 12,
-              fontWeight: FontWeight.w900,
+              fontSize: large ? 28 : 18,
+              fontWeight: large ? FontWeight.w900 : FontWeight.w800,
+              letterSpacing: large ? -0.4 : -0.2,
+              height: 1.05,
             ),
           ),
         ),
@@ -902,8 +1036,9 @@ class _DialogHeader extends StatelessWidget {
                 displayBalance,
                 style: TextStyle(
                   color: const Color(0xFF1E222B),
-                  fontSize: large ? 22 : 10,
+                  fontSize: large ? 22 : 12,
                   fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
                 ),
               ),
             ],
@@ -940,6 +1075,7 @@ class _SearchBody extends StatelessWidget {
     required this.friends,
     required this.showResults,
     required this.submittedSearchQuery,
+    required this.submittedSearchResults,
     required this.onUserSelected,
     required this.onSearchSubmitted,
     required this.onAddFriendRequested,
@@ -951,6 +1087,7 @@ class _SearchBody extends StatelessWidget {
   final List<_ReferenceUser> friends;
   final bool showResults;
   final String? submittedSearchQuery;
+  final List<_ReferenceUser> submittedSearchResults;
   final ValueChanged<_ReferenceUser> onUserSelected;
   final VoidCallback onSearchSubmitted;
   final VoidCallback onAddFriendRequested;
@@ -959,15 +1096,48 @@ class _SearchBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final includeSubmittedFallback =
+    final useSubmittedResults =
         submittedSearchQuery != null &&
         submittedSearchQuery == controller.text.trim();
-    final results = _searchUsers(
-      controller.text,
-      friends,
-      includeSubmittedFallback: includeSubmittedFallback,
-    );
+    final results =
+        useSubmittedResults
+            ? submittedSearchResults
+            : _searchUsers(controller.text, friends);
     final showFriendsEmpty = !showResults;
+    final sectionTitle =
+        showFriendsEmpty
+            ? 'My friends (${friends.length})'
+            : 'Search results (${results.length})';
+    final scrollItems =
+        showFriendsEmpty
+            ? friends
+                .map(
+                  (user) => _ResultRow(
+                    user: user,
+                    compact: true,
+                    onTap: () => onUserSelected(user),
+                    onEdit: () => onEditFriendRequested(user),
+                    onDelete: () => onDeleteFriendRequested(user),
+                  ),
+                )
+                .toList()
+            : results
+                .map(
+                  (user) => _ResultRow(
+                    user: user,
+                    compact: true,
+                    onTap: () => onUserSelected(user),
+                    onEdit:
+                        user.isFriend
+                            ? () => onEditFriendRequested(user)
+                            : null,
+                    onDelete:
+                        user.isFriend
+                            ? () => onDeleteFriendRequested(user)
+                            : null,
+                  ),
+                )
+                .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -977,125 +1147,106 @@ class _SearchBody extends StatelessWidget {
           controller: controller,
           hintText: 'Search by username',
           onSubmitted: (_) => onSearchSubmitted(),
-          large: true,
+          large: false,
         ),
-        const SizedBox(height: 34),
-        if (showFriendsEmpty) ...[
-          Text(
-            'My friends (${friends.length})',
-            style: const TextStyle(
-              color: Color(0xFF454B5A),
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+        const SizedBox(height: 14),
+        Text(
+          sectionTitle,
+          style: const TextStyle(
+            color: Color(0xFF454B5A),
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
           ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: GestureDetector(
-              key: const Key('friends-empty-zone'),
-              behavior: HitTestBehavior.opaque,
-              onSecondaryTapDown: (details) async {
-                final overlay =
-                    Overlay.of(context).context.findRenderObject() as RenderBox;
-                final action = await showMenu<_FriendMenuAction>(
-                  context: context,
-                  position: RelativeRect.fromRect(
-                    Rect.fromLTWH(
-                      details.globalPosition.dx,
-                      details.globalPosition.dy,
-                      0,
-                      0,
-                    ),
-                    Offset.zero & overlay.size,
-                  ),
-                  items: const [
-                    PopupMenuItem(
-                      value: _FriendMenuAction.add,
-                      child: Text('Add friend'),
-                    ),
-                  ],
-                );
-                if (action == _FriendMenuAction.add) {
-                  onAddFriendRequested();
-                }
-              },
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ...friends.map(
-                    (user) => _ResultRow(
-                      user: user,
-                      onTap: () => onUserSelected(user),
-                      onEdit: () => onEditFriendRequested(user),
-                      onDelete: () => onDeleteFriendRequested(user),
-                    ),
-                  ),
-                  if (friends.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 42),
-                      child: Center(
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: GestureDetector(
+            key: const Key('friends-empty-zone'),
+            behavior: HitTestBehavior.opaque,
+            onSecondaryTapDown:
+                showFriendsEmpty
+                    ? (details) async {
+                      final overlay =
+                          Overlay.of(context).context.findRenderObject()
+                              as RenderBox;
+                      final action = await showMenu<_FriendMenuAction>(
+                        context: context,
+                        position: RelativeRect.fromRect(
+                          Rect.fromLTWH(
+                            details.globalPosition.dx,
+                            details.globalPosition.dy,
+                            0,
+                            0,
+                          ),
+                          Offset.zero & overlay.size,
+                        ),
+                        items: const [
+                          PopupMenuItem(
+                            value: _FriendMenuAction.add,
+                            child: Text('Add friend'),
+                          ),
+                        ],
+                      );
+                      if (action == _FriendMenuAction.add) {
+                        onAddFriendRequested();
+                      }
+                    }
+                    : null,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F8FC),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              child:
+                  scrollItems.isEmpty
+                      ? const Center(
                         child: Text(
-                          'No friends',
+                          'No users found',
                           style: TextStyle(
                             color: Color(0xFF737987),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ),
-                  const SizedBox(height: 360),
-                ],
-              ),
-            ),
-          ),
-        ],
-        if (showResults && results.isEmpty)
-          const Expanded(
-            child: Center(
-              child: Text(
-                'No users found',
-                style: TextStyle(
-                  color: Color(0xFF737987),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        if (showResults && results.isNotEmpty)
-          const Text(
-            'Search results',
-            style: TextStyle(
-              color: Color(0xFF454B5A),
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        if (showResults && results.isNotEmpty) const SizedBox(height: 16),
-        if (showResults && results.isNotEmpty)
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children:
-                  results
-                      .map(
-                        (user) => _ResultRow(
-                          user: user,
-                          onTap: () => onUserSelected(user),
-                          onEdit:
-                              user.isFriend
-                                  ? () => onEditFriendRequested(user)
-                                  : null,
-                          onDelete:
-                              user.isFriend
-                                  ? () => onDeleteFriendRequested(user)
-                                  : null,
-                        ),
                       )
-                      .toList(),
+                      : Stack(
+                        children: [
+                          ListView(
+                            primary: false,
+                            padding: const EdgeInsets.only(right: 18),
+                            children: scrollItems,
+                          ),
+                          if (scrollItems.length > 5)
+                            Positioned(
+                              top: 14,
+                              right: 4,
+                              bottom: 18,
+                              child: Column(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      width: 6,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF6E6E73),
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 14,
+                                    color: Color(0xFF7C7C82),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -1353,12 +1504,14 @@ class _ResultRow extends StatelessWidget {
   const _ResultRow({
     required this.user,
     required this.onTap,
+    this.compact = false,
     this.onEdit,
     this.onDelete,
   });
 
   final _ReferenceUser user;
   final VoidCallback onTap;
+  final bool compact;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -1407,24 +1560,25 @@ class _ResultRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: EdgeInsets.only(bottom: compact ? 10 : 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 user.name,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Color(0xFF171B24),
-                  fontSize: 18,
+                  fontSize: compact ? 12 : 18,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               Text(
                 user.handle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Color(0xFF7B8190),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: compact ? 11 : 14,
+                  fontWeight: compact ? FontWeight.w500 : FontWeight.w600,
+                  height: 1.15,
                 ),
               ),
             ],

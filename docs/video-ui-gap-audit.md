@@ -40,12 +40,14 @@ Observed states:
 - The Send Robux close button now hides the dialog and leaves the background visible.
 - The Send Robux entry state now uses a bottom-raised large sheet instead of the earlier floating card layout.
 - The Send Robux entry state now animates upward from the bottom instead of appearing instantly.
+- The friends/search entry now uses a compact centered card with a fixed results panel, which is closer to the latest reference than the earlier full-height popup.
 - The Send Robux search state now starts with built-in friends, supports right-click add/edit/delete flows, and shows blank avatars for non-friend search results.
-- Search now keeps normal typing scoped to saved friends, and only injects a top mock result after the current username is explicitly submitted with `Enter`.
+- Search now keeps normal typing scoped to saved friends, and on `Enter` generates a cached random `1-20` item result list whose first row is always the submitted match.
 - The Robux balance is now editable by right-click and decrements after successful sends.
 - The confirm step now blocks sending when the shared balance is too low and surfaces the Robux shortfall inline.
 - The selected-user amount stage now uses a centered avatar/name composition, dedicated amount field, Robux quick chips, and a larger primary button closer to the reference frame.
 - The Send Robux flow now omits avatar rendering in the friends list, search results, and selected-user states.
+- Typography now uses a bundled Gotham-like stand-in font (`Montserrat`), but sizes/weights/spacing still need frame-level tuning.
 - The Robux currency icon now uses a custom double-hexagon mark instead of the generic system icon in both the top navigation and package areas.
 - Search behavior now distinguishes between saved friends and non-friends, but it is still local mock data rather than a real platform friend source.
 - Amount flow layout is now closer to the reference, but it still does not represent the different partially typed amount frames and avatar detail well.
