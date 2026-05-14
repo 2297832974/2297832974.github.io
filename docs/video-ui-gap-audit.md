@@ -38,13 +38,23 @@ Observed states:
 - The app now models the modal-hidden Robux home state on initial launch and after Send.
 - The top-right `Send` button now opens the Send Robux dialog instead of showing the dialog by default.
 - The Send Robux close button now hides the dialog and leaves the background visible.
-- Search behavior now supports no-result and alternate result-set variants, but it is still deterministic mock logic.
-- Amount flow is too direct and does not represent the different partially typed amount frames well.
-- User avatars are generic placeholders instead of matching the changing reference avatars.
+- The Send Robux entry state now uses a bottom-raised large sheet instead of the earlier floating card layout.
+- The Send Robux entry state now animates upward from the bottom instead of appearing instantly.
+- The Send Robux search state now starts with built-in friends, supports right-click add/edit/delete flows, and shows blank avatars for non-friend search results.
+- Search now keeps normal typing scoped to saved friends, and only injects a top mock result after the current username is explicitly submitted with `Enter`.
+- The Robux balance is now editable by right-click and decrements after successful sends.
+- The confirm step now blocks sending when the shared balance is too low and surfaces the Robux shortfall inline.
+- The selected-user amount stage now uses a centered avatar/name composition, dedicated amount field, Robux quick chips, and a larger primary button closer to the reference frame.
+- The Send Robux flow now omits avatar rendering in the friends list, search results, and selected-user states.
+- The Robux currency icon now uses a custom double-hexagon mark instead of the generic system icon in both the top navigation and package areas.
+- Search behavior now distinguishes between saved friends and non-friends, but it is still local mock data rather than a real platform friend source.
+- Amount flow layout is now closer to the reference, but it still does not represent the different partially typed amount frames and avatar detail well.
+- User avatar rendering is intentionally removed from the Send Robux flow for the current restoration target.
 - The Robux background page now includes a closer Roblox-style header, balance strip, hero, and yen package list, but spacing and icon detail still need frame-level refinement.
-- The top recording/status area and bottom comment icon are only approximate.
+- The bottom comment icon is still only approximate.
 - The lower-left comment icon now uses a custom line drawing closer to the dense video frames instead of a generic Material icon.
 - The top creator bubble and video caption text are intentionally excluded from restoration.
+- The top phone status and recording strip are intentionally excluded from restoration.
 - The lower-right music playback card is intentionally excluded from restoration.
 - There is no internal comparison workflow for checking restored widgets against specific frame groups.
 

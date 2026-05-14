@@ -1,9 +1,18 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 class RobuxHomePage extends StatelessWidget {
-  const RobuxHomePage({super.key, required this.onSendPressed});
+  const RobuxHomePage({
+    super.key,
+    required this.robuxBalance,
+    required this.onSendPressed,
+    required this.onEditBalanceRequested,
+  });
 
+  final int robuxBalance;
   final VoidCallback onSendPressed;
+  final VoidCallback onEditBalanceRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +22,11 @@ class RobuxHomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _RobloxHeader(),
-          _RobuxAccountStrip(onSendPressed: onSendPressed),
+          _RobuxAccountStrip(
+            robuxBalance: robuxBalance,
+            onSendPressed: onSendPressed,
+            onEditBalanceRequested: onEditBalanceRequested,
+          ),
           Expanded(
             child: CustomPaint(
               painter: const _SubtleGridPainter(),
@@ -84,11 +97,7 @@ class _RobloxHeader extends StatelessWidget {
                   color: Color(0xFF4B4E55),
                 ),
                 const SizedBox(width: 18),
-                const Icon(
-                  Icons.hexagon_outlined,
-                  size: 34,
-                  color: Color(0xFF33363D),
-                ),
+                const _RobuxCurrencyIcon(size: 34, color: Color(0xFF33363D)),
                 const SizedBox(width: 18),
                 const Icon(
                   Icons.settings_outlined,
@@ -180,9 +189,15 @@ class _RobloxAvatar extends StatelessWidget {
 }
 
 class _RobuxAccountStrip extends StatelessWidget {
-  const _RobuxAccountStrip({required this.onSendPressed});
+  const _RobuxAccountStrip({
+    required this.robuxBalance,
+    required this.onSendPressed,
+    required this.onEditBalanceRequested,
+  });
 
+  final int robuxBalance;
   final VoidCallback onSendPressed;
+  final VoidCallback onEditBalanceRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -195,18 +210,24 @@ class _RobuxAccountStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.hexagon_outlined,
-            size: 34,
-            color: Color(0xFF20232B),
-          ),
-          const SizedBox(width: 9),
-          const Text(
-            '0',
-            style: TextStyle(
-              color: Color(0xFF20232B),
-              fontSize: 25,
-              fontWeight: FontWeight.w900,
+          GestureDetector(
+            key: const Key('home-balance-trigger'),
+            behavior: HitTestBehavior.opaque,
+            onSecondaryTap: onEditBalanceRequested,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _RobuxCurrencyIcon(size: 34, color: Color(0xFF20232B)),
+                const SizedBox(width: 9),
+                Text(
+                  _formatCompactRobuxBalance(robuxBalance),
+                  style: const TextStyle(
+                    color: Color(0xFF20232B),
+                    fontSize: 25,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
           ),
           const Spacer(),
@@ -247,6 +268,11 @@ class _RobuxAccountStrip extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatCompactRobuxBalance(int balance) {
+  final raw = balance.toString();
+  return raw.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
 }
 
 class _SubtleGridPainter extends CustomPainter {
@@ -341,11 +367,7 @@ class _RobuxPackageRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.hexagon_outlined,
-            size: 28,
-            color: Color(0xFF20232B),
-          ),
+          const _RobuxCurrencyIcon(size: 28, color: Color(0xFF20232B)),
           const SizedBox(width: 9),
           Text(
             amount,
@@ -357,11 +379,7 @@ class _RobuxPackageRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Icon(
-            Icons.hexagon_outlined,
-            size: 21,
-            color: Color(0xFF777C8E),
-          ),
+          const _RobuxCurrencyIcon(size: 21, color: Color(0xFF777C8E)),
           Text(
             previous,
             style: const TextStyle(
@@ -395,5 +413,89 @@ class _RobuxPackageRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _RobuxCurrencyIcon extends StatelessWidget {
+  const _RobuxCurrencyIcon({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _RobuxCurrencyIconPainter(
+          color: color,
+          strokeWidth: size * 0.09,
+        ),
+      ),
+    );
+  }
+}
+
+class _RobuxCurrencyIconPainter extends CustomPainter {
+  const _RobuxCurrencyIconPainter({
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final strokePaint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeJoin = StrokeJoin.round;
+    final fillPaint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill;
+
+    canvas.drawPath(
+      _hexagon(center: center, radius: size.width * 0.46),
+      strokePaint,
+    );
+    canvas.drawPath(
+      _hexagon(center: center, radius: size.width * 0.29),
+      strokePaint,
+    );
+
+    final squareSize = size.width * 0.19;
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: squareSize, height: squareSize),
+      fillPaint,
+    );
+  }
+
+  Path _hexagon({required Offset center, required double radius}) {
+    final path = Path();
+    for (int index = 0; index < 6; index++) {
+      final angle = (-math.pi / 2) + (index * math.pi / 3);
+      final point = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+      if (index == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _RobuxCurrencyIconPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
   }
 }

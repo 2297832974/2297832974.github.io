@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:token_buy/app/token_buy_app.dart';
@@ -25,14 +26,16 @@ void main() {
     await tester.pumpWidget(const TokenBuyApp());
 
     await tester.tap(find.byKey(const Key('open-send-dialog-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search by username'), findsOneWidget);
+    expect(find.text('My friends (8)'), findsOneWidget);
+    expect(find.text('ktz'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('username-input')), 'ktz');
     await tester.pump();
 
-    expect(find.text('Enter username'), findsOneWidget);
-
-    await tester.enterText(find.byKey(const Key('username-input')), 'gxyan');
-    await tester.pump();
-
-    await tester.tap(find.text('Sauveur2deCAPYBARAS'));
+    await tester.tap(find.byKey(const Key('friend-row-friend-ktz')));
     await tester.pump();
 
     await tester.enterText(find.byKey(const Key('amount-input')), '5000');
@@ -46,30 +49,52 @@ void main() {
     expect(find.text('Exit'), findsOneWidget);
   });
 
-  testWidgets('search supports no results and alternate users', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const TokenBuyApp());
+  testWidgets(
+    'search supports friend matches and enter-to-insert fallback results',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const TokenBuyApp());
 
-    await tester.tap(find.byKey(const Key('open-send-dialog-button')));
-    await tester.pump();
+      await tester.tap(find.byKey(const Key('open-send-dialog-button')));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('username-input')), 'zznone');
-    await tester.pump();
+      await tester.enterText(find.byKey(const Key('username-input')), 'zzno');
+      await tester.pump();
 
-    expect(find.text('No users found'), findsOneWidget);
+      expect(find.text('No users found'), findsOneWidget);
+      expect(find.byKey(const Key('friend-row-search-zzno')), findsNothing);
 
-    await tester.enterText(find.byKey(const Key('username-input')), 'sonic');
-    await tester.pump();
+      await tester.enterText(find.byKey(const Key('username-input')), 'zznone');
+      await tester.pump();
 
-    expect(find.text('SonicBacon'), findsOneWidget);
+      expect(find.byKey(const Key('friend-row-search-zznone')), findsNothing);
+      expect(find.byKey(const Key('avatar-search-zznone-blank')), findsNothing);
 
-    await tester.tap(find.text('SonicBacon'));
-    await tester.pump();
+      await tester.showKeyboard(find.byKey(const Key('username-input')));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
 
-    expect(find.text('SonicBacon'), findsOneWidget);
-    expect(find.byKey(const Key('amount-input')), findsOneWidget);
-  });
+      expect(find.byKey(const Key('friend-row-search-zznone')), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('username-input')), 'sonic');
+      await tester.pump();
+
+      expect(find.text('SonicBacon'), findsOneWidget);
+      expect(find.byKey(const Key('friend-row-search-sonic')), findsNothing);
+
+      await tester.showKeyboard(find.byKey(const Key('username-input')));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+
+      expect(find.byKey(const Key('friend-row-search-sonic')), findsOneWidget);
+      expect(find.text('SonicBacon'), findsWidgets);
+
+      await tester.tap(find.byKey(const Key('friend-row-friend-sonic')));
+      await tester.pump();
+
+      expect(find.text('SonicBacon'), findsOneWidget);
+      expect(find.byKey(const Key('amount-input')), findsOneWidget);
+    },
+  );
 
   testWidgets('close button hides the send dialog', (
     WidgetTester tester,
@@ -79,7 +104,7 @@ void main() {
     expect(find.text('Send Robux'), findsNothing);
 
     await tester.tap(find.byKey(const Key('open-send-dialog-button')));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Send Robux'), findsOneWidget);
     await tester.tap(find.byKey(const Key('close-dialog-button')));
@@ -94,8 +119,25 @@ void main() {
   ) async {
     await tester.pumpWidget(const TokenBuyApp());
 
+    await tester.tap(
+      find.byKey(const Key('home-balance-trigger')),
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('balance-input')), '10000');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.byKey(const Key('open-send-dialog-button')));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dialog-balance-trigger')),
+        matching: find.text('10,000'),
+      ),
+      findsOneWidget,
+    );
 
     await tester.enterText(find.byKey(const Key('username-input')), 'mir');
     await tester.pump();
@@ -113,7 +155,61 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 950));
 
-    expect(find.text('Enter username'), findsNothing);
+    expect(find.text('Search by username'), findsNothing);
     expect(find.byKey(const Key('open-send-dialog-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('open-send-dialog-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dialog-balance-trigger')),
+        matching: find.text('5,000'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('home-balance-trigger')),
+        matching: find.text('5,000'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('send is disabled when balance is insufficient', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const TokenBuyApp());
+
+    await tester.tap(
+      find.byKey(const Key('home-balance-trigger')),
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('balance-input')), '100');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open-send-dialog-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('username-input')), 'sonic');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('friend-row-friend-sonic')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('amount-input')), '500');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('amount-next-button')));
+    await tester.pump();
+
+    expect(find.text('Need 400 more Robux'), findsOneWidget);
+
+    final sendContainer = tester.widget<Container>(
+      find.descendant(
+        of: find.byKey(const Key('confirm-send-button')),
+        matching: find.byType(Container),
+      ),
+    );
+    final decoration = sendContainer.decoration! as BoxDecoration;
+    expect(decoration.color, const Color(0xFFE1E3EA));
   });
 }

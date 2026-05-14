@@ -22,11 +22,11 @@
 
 ## Visual Regions
 
-- Phone shell: vertical canvas, status bar, recording pill, bottom comment icon, and home indicator.
-- Excluded overlay: the top creator bubble and video caption text are not part of the app feature and should not be restored.
+- Phone shell: vertical canvas, bottom comment icon, and bottom home indicator.
+- Excluded overlay: the top creator bubble, video caption text, and phone status/recording strip are not part of the app feature and should not be restored.
 - Excluded overlay: the lower-right music playback card from the source video is not part of the app feature and should not be restored.
-- Background page: imitation of `https://www.roblox.com/upgrades/robux?ctx=navpopover`, including the Roblox-style top navigation, Robux balance strip, top-right `Send` action, product hero, and package rows.
-- Send dialog: modal shell, search input, search results, selected account, amount input, confirmation buttons.
+- Background page: imitation of `https://www.roblox.com/upgrades/robux?ctx=navpopover`, including the Roblox-style top navigation, editable Robux balance strip, top-right `Send` action, product hero, and package rows.
+- Send dialog: bottom-raised sheet shell with bottom-up entrance animation, built-in friends list, right-click friend management, right-click editable shared balance, avatar-free friend/search rows, enter-to-insert temporary search fallback results, an avatar-free selected-user amount sheet, confirmation buttons, and insufficient-balance blocking.
 - Component boundary: the Robux home page background lives in `lib/features/token_flow/presentation/widgets/robux_home_page.dart`; the token flow page owns modal state and dialog flow.
 
 ## Current Build Order

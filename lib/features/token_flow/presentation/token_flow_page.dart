@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'widgets/robux_home_page.dart';
@@ -6,33 +8,104 @@ enum _SendStage { search, amount, confirm, hidden }
 
 class _ReferenceUser {
   const _ReferenceUser({
+    required this.id,
     required this.name,
     required this.handle,
     required this.avatarColor,
+    this.hasAvatar = true,
+    this.isFriend = true,
   });
 
+  final String id;
   final String name;
   final String handle;
   final Color avatarColor;
+  final bool hasAvatar;
+  final bool isFriend;
+
+  _ReferenceUser copyWith({
+    String? id,
+    String? name,
+    String? handle,
+    Color? avatarColor,
+    bool? hasAvatar,
+    bool? isFriend,
+  }) {
+    return _ReferenceUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      handle: handle ?? this.handle,
+      avatarColor: avatarColor ?? this.avatarColor,
+      hasAvatar: hasAvatar ?? this.hasAvatar,
+      isFriend: isFriend ?? this.isFriend,
+    );
+  }
 }
 
-const _referenceUsers = [
+const _seedFriends = [
   _ReferenceUser(
+    id: 'friend-ktz',
+    name: 'ktz',
+    handle: '@ktz',
+    avatarColor: Color(0xFF3A3F49),
+  ),
+  _ReferenceUser(
+    id: 'friend-diddieblud676',
+    name: 'diddieblud676',
+    handle: '@diddieblud676',
+    avatarColor: Color(0xFFB88251),
+  ),
+  _ReferenceUser(
+    id: 'friend-vixsauce',
+    name: 'vixsauce',
+    handle: '@vixsauce',
+    avatarColor: Color(0xFF6C202B),
+  ),
+  _ReferenceUser(
+    id: 'friend-daxshyy',
+    name: 'daxshyy',
+    handle: '@daxshyy',
+    avatarColor: Color(0xFFB7BDC9),
+  ),
+  _ReferenceUser(
+    id: 'friend-dinoh',
+    name: 'Dinoh',
+    handle: '@Dinoh',
+    avatarColor: Color(0xFF8A5A36),
+  ),
+  _ReferenceUser(
+    id: 'friend-sauveur',
     name: 'Sauveur2deCAPYBARAS',
     handle: '@sauveur',
     avatarColor: Color(0xFFE5E7EC),
   ),
   _ReferenceUser(
+    id: 'friend-mirian',
     name: 'miriandogaru',
     handle: '@miriandogaru',
     avatarColor: Color(0xFFD5805E),
   ),
   _ReferenceUser(
+    id: 'friend-sonic',
     name: 'SonicBacon',
     handle: '@SonicBacon',
     avatarColor: Color(0xFFE2C35F),
   ),
 ];
+
+const _avatarPalette = [
+  Color(0xFF3A3F49),
+  Color(0xFFB88251),
+  Color(0xFF6C202B),
+  Color(0xFFB7BDC9),
+  Color(0xFF8A5A36),
+  Color(0xFFE5E7EC),
+  Color(0xFFD5805E),
+  Color(0xFFE2C35F),
+  Color(0xFF4E6E58),
+];
+
+enum _FriendMenuAction { add, edit, delete }
 
 class TokenFlowPage extends StatefulWidget {
   const TokenFlowPage({super.key});
@@ -45,10 +118,18 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
   final _usernameController = TextEditingController();
   final _amountController = TextEditingController();
   _SendStage _stage = _SendStage.hidden;
-  _ReferenceUser _selectedUser = _referenceUsers.first;
+  List<_ReferenceUser> _friends = List.of(_seedFriends);
+  _ReferenceUser _selectedUser = _seedFriends.first;
+  int _robuxBalance = 0;
   bool _showSuccessToast = false;
+  String? _submittedSearchQuery;
 
-  bool get _showResults => _usernameController.text.trim().length >= 3;
+  String get _trimmedUsername => _usernameController.text.trim();
+
+  bool get _hasCommittedSearch =>
+      _trimmedUsername.isNotEmpty && _submittedSearchQuery == _trimmedUsername;
+
+  bool get _showResults => _trimmedUsername.isNotEmpty;
 
   @override
   void initState() {
@@ -82,11 +163,20 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
               child: _VideoAppSurface(
                 stage: _stage,
                 selectedUser: _selectedUser,
+                friends: _friends,
+                robuxBalance: _robuxBalance,
                 usernameController: _usernameController,
                 amountController: _amountController,
                 showResults: _showResults,
+                submittedSearchQuery:
+                    _hasCommittedSearch ? _submittedSearchQuery : null,
                 showSuccessToast: _showSuccessToast,
                 onUserSelected: _handleUserSelected,
+                onSearchSubmitted: _handleSearchSubmitted,
+                onAddFriendRequested: _handleAddFriendRequested,
+                onEditFriendRequested: _handleEditFriendRequested,
+                onDeleteFriendRequested: _handleDeleteFriendRequested,
+                onEditBalanceRequested: _handleEditBalanceRequested,
                 onNext: _handleNext,
                 onSend: _handleSend,
                 onOpenSendDialog: _handleOpenSendDialog,
@@ -104,6 +194,17 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
     setState(() {});
   }
 
+  void _handleSearchSubmitted() {
+    final query = _trimmedUsername;
+    if (query.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _submittedSearchQuery = query;
+    });
+  }
+
   void _handleOpenSendDialog() {
     setState(() {
       _resetSearch(updateState: false, nextStage: _SendStage.search);
@@ -114,6 +215,7 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
     setState(() {
       _selectedUser = user;
       _usernameController.text = user.name;
+      _submittedSearchQuery = null;
       _stage = _SendStage.amount;
     });
   }
@@ -139,7 +241,14 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
   }
 
   void _handleSend() {
+    final sendAmount = int.tryParse(
+      _amountController.text.trim().replaceAll(',', ''),
+    );
+
     setState(() {
+      if (sendAmount != null && sendAmount > 0) {
+        _robuxBalance = math.max(0, _robuxBalance - sendAmount);
+      }
       _showSuccessToast = true;
       _stage = _SendStage.hidden;
     });
@@ -155,14 +264,206 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
     });
   }
 
+  Future<void> _handleAddFriendRequested() async {
+    final friend = await _showFriendEditorDialog();
+    if (!mounted || friend == null) {
+      return;
+    }
+
+    setState(() {
+      _friends = [..._friends, friend];
+    });
+  }
+
+  Future<void> _handleEditFriendRequested(_ReferenceUser user) async {
+    final friend = await _showFriendEditorDialog(existing: user);
+    if (!mounted || friend == null) {
+      return;
+    }
+
+    setState(() {
+      _friends =
+          _friends
+              .map((current) => current.id == user.id ? friend : current)
+              .toList();
+      if (_selectedUser.id == user.id) {
+        _selectedUser = friend;
+      }
+    });
+  }
+
+  void _handleDeleteFriendRequested(_ReferenceUser user) {
+    setState(() {
+      _friends = _friends.where((current) => current.id != user.id).toList();
+      if (_selectedUser.id == user.id) {
+        _selectedUser = _friends.isNotEmpty ? _friends.first : user;
+      }
+    });
+  }
+
+  Future<void> _handleEditBalanceRequested() async {
+    final controller = TextEditingController(text: _robuxBalance.toString());
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit balance'),
+          content: TextField(
+            key: const Key('balance-input'),
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Robux balance'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final parsed = int.tryParse(
+                  controller.text.trim().replaceAll(',', ''),
+                );
+                Navigator.of(context).pop(parsed);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      _robuxBalance = math.max(0, result);
+    });
+  }
+
+  Future<_ReferenceUser?> _showFriendEditorDialog({
+    _ReferenceUser? existing,
+  }) async {
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    final handleController = TextEditingController(
+      text: existing == null ? '' : existing.handle.replaceFirst('@', ''),
+    );
+    var selectedColor = existing?.avatarColor ?? _avatarPalette.first;
+    var hasAvatar = existing?.hasAvatar ?? true;
+
+    final result = await showDialog<_ReferenceUser>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(existing == null ? 'Add friend' : 'Edit friend'),
+              content: SizedBox(
+                width: 360,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nickname'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: handleController,
+                      decoration: const InputDecoration(labelText: 'Username'),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Avatar',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Blank'),
+                          selected: !hasAvatar,
+                          onSelected: (_) {
+                            setDialogState(() {
+                              hasAvatar = false;
+                            });
+                          },
+                        ),
+                        ..._avatarPalette.map(
+                          (color) => ChoiceChip(
+                            label: Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            selected: hasAvatar && selectedColor == color,
+                            onSelected: (_) {
+                              setDialogState(() {
+                                hasAvatar = true;
+                                selectedColor = color;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final normalizedName = nameController.text.trim();
+                    final normalizedHandle = handleController.text.trim();
+                    if (normalizedName.isEmpty || normalizedHandle.isEmpty) {
+                      return;
+                    }
+
+                    Navigator.of(context).pop(
+                      _ReferenceUser(
+                        id:
+                            existing?.id ??
+                            'friend-${DateTime.now().microsecondsSinceEpoch}',
+                        name: normalizedName,
+                        handle: '@$normalizedHandle',
+                        avatarColor: selectedColor,
+                        hasAvatar: hasAvatar,
+                        isFriend: true,
+                      ),
+                    );
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    return result;
+  }
+
   void _resetSearch({
     bool updateState = true,
     _SendStage nextStage = _SendStage.search,
   }) {
     void reset() {
       _stage = nextStage;
-      _selectedUser = _referenceUsers.first;
+      _selectedUser = _friends.isNotEmpty ? _friends.first : _seedFriends.first;
       _showSuccessToast = false;
+      _submittedSearchQuery = null;
       _usernameController.clear();
       _amountController.clear();
     }
@@ -176,42 +477,48 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
   }
 }
 
-List<_ReferenceUser> _searchUsers(String query) {
-  final normalized = query.trim().toLowerCase();
+List<_ReferenceUser> _searchUsers(
+  String query,
+  List<_ReferenceUser> friends, {
+  bool includeSubmittedFallback = false,
+}) {
+  final trimmed = query.trim();
+  final normalized = trimmed.toLowerCase();
 
-  if (normalized.length < 3) {
+  if (normalized.isEmpty) {
     return const [];
   }
 
-  if (normalized.contains('zz') || normalized.contains('none')) {
-    return const [];
+  final friendMatches =
+      friends.where((friend) {
+        final searchable = '${friend.name} ${friend.handle}'.toLowerCase();
+        return searchable.contains(normalized);
+      }).toList();
+
+  if (!includeSubmittedFallback) {
+    return friendMatches;
   }
 
-  if (normalized.contains('mir')) {
-    return [_referenceUsers[1]];
-  }
+  final hasExactFriendMatch = friendMatches.any((friend) {
+    final normalizedHandle = friend.handle.replaceFirst('@', '').toLowerCase();
+    return friend.name.toLowerCase() == normalized ||
+        normalizedHandle == normalized;
+  });
 
-  if (normalized.contains('sonic') || normalized.contains('bacon')) {
-    return [_referenceUsers[2]];
+  if (hasExactFriendMatch) {
+    return friendMatches;
   }
 
   return [
-    _referenceUsers[0],
-    const _ReferenceUser(
-      name: 'pls',
-      handle: '@pls',
-      avatarColor: Color(0xFFD7DCE5),
+    _ReferenceUser(
+      id: 'search-$normalized',
+      name: trimmed,
+      handle: '@$normalized',
+      avatarColor: const Color(0xFFE7EAF1),
+      hasAvatar: false,
+      isFriend: false,
     ),
-    const _ReferenceUser(
-      name: 'pls',
-      handle: '@pls2',
-      avatarColor: Color(0xFFE7E2D7),
-    ),
-    const _ReferenceUser(
-      name: 'plsssss',
-      handle: '@plsssss',
-      avatarColor: Color(0xFFD7E5DE),
-    ),
+    ...friendMatches,
   ];
 }
 
@@ -232,15 +539,40 @@ String _formatRobuxAmount(String amount) {
   );
 }
 
+String _formatCompactBalance(int balance) {
+  if (balance >= 1000000) {
+    final millions = balance / 1000000;
+    final text =
+        millions >= 10
+            ? millions.toStringAsFixed(1)
+            : millions.toStringAsPrecision(2);
+    return '${text.replaceFirst(RegExp(r'\.?0+$'), '')}M';
+  }
+
+  if (balance >= 1000) {
+    return _formatRobuxAmount('$balance');
+  }
+
+  return '$balance';
+}
+
 class _VideoAppSurface extends StatelessWidget {
   const _VideoAppSurface({
     required this.stage,
     required this.selectedUser,
+    required this.friends,
+    required this.robuxBalance,
     required this.usernameController,
     required this.amountController,
     required this.showResults,
+    required this.submittedSearchQuery,
     required this.showSuccessToast,
     required this.onUserSelected,
+    required this.onSearchSubmitted,
+    required this.onAddFriendRequested,
+    required this.onEditFriendRequested,
+    required this.onDeleteFriendRequested,
+    required this.onEditBalanceRequested,
     required this.onNext,
     required this.onSend,
     required this.onOpenSendDialog,
@@ -250,11 +582,19 @@ class _VideoAppSurface extends StatelessWidget {
 
   final _SendStage stage;
   final _ReferenceUser selectedUser;
+  final List<_ReferenceUser> friends;
+  final int robuxBalance;
   final TextEditingController usernameController;
   final TextEditingController amountController;
   final bool showResults;
+  final String? submittedSearchQuery;
   final bool showSuccessToast;
   final ValueChanged<_ReferenceUser> onUserSelected;
+  final VoidCallback onSearchSubmitted;
+  final VoidCallback onAddFriendRequested;
+  final ValueChanged<_ReferenceUser> onEditFriendRequested;
+  final ValueChanged<_ReferenceUser> onDeleteFriendRequested;
+  final VoidCallback onEditBalanceRequested;
   final VoidCallback onNext;
   final VoidCallback onSend;
   final VoidCallback onOpenSendDialog;
@@ -272,17 +612,14 @@ class _VideoAppSurface extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          RobuxHomePage(onSendPressed: onOpenSendDialog),
+          RobuxHomePage(
+            robuxBalance: robuxBalance,
+            onSendPressed: onOpenSendDialog,
+            onEditBalanceRequested: onEditBalanceRequested,
+          ),
           if (stage != _SendStage.hidden)
             Positioned.fill(
               child: Container(color: Colors.black.withValues(alpha: 0.26)),
-            ),
-          if (stage != _SendStage.hidden)
-            const Positioned(
-              left: 22,
-              right: 22,
-              top: 8,
-              child: _RecordingStatusBar(),
             ),
           if (showSuccessToast)
             Positioned(
@@ -295,20 +632,32 @@ class _VideoAppSurface extends StatelessWidget {
             ),
           if (stage != _SendStage.hidden)
             Positioned(
-              left: 28,
-              right: 28,
-              top: _dialogTop(stage, showResults),
-              child: _SendRobuxDialog(
+              left: _dialogInsets(stage).left,
+              right: _dialogInsets(stage).right,
+              top: _dialogInsets(stage).top,
+              bottom: _dialogInsets(stage).bottom,
+              child: _AnimatedDialogShell(
                 stage: stage,
-                selectedUser: selectedUser,
-                usernameController: usernameController,
-                amountController: amountController,
-                showResults: showResults,
-                onUserSelected: onUserSelected,
-                onNext: onNext,
-                onSend: onSend,
-                onClose: onClose,
-                onExit: onExit,
+                child: _SendRobuxDialog(
+                  stage: stage,
+                  selectedUser: selectedUser,
+                  friends: friends,
+                  robuxBalance: robuxBalance,
+                  usernameController: usernameController,
+                  amountController: amountController,
+                  showResults: showResults,
+                  submittedSearchQuery: submittedSearchQuery,
+                  onUserSelected: onUserSelected,
+                  onSearchSubmitted: onSearchSubmitted,
+                  onAddFriendRequested: onAddFriendRequested,
+                  onEditFriendRequested: onEditFriendRequested,
+                  onDeleteFriendRequested: onDeleteFriendRequested,
+                  onEditBalanceRequested: onEditBalanceRequested,
+                  onNext: onNext,
+                  onSend: onSend,
+                  onClose: onClose,
+                  onExit: onExit,
+                ),
               ),
             ),
           Positioned(
@@ -337,74 +686,58 @@ class _VideoAppSurface extends StatelessWidget {
     );
   }
 
-  static double _dialogTop(_SendStage stage, bool showResults) {
-    if (stage == _SendStage.confirm) {
-      return 322;
+  static _DialogInsets _dialogInsets(_SendStage stage) {
+    switch (stage) {
+      case _SendStage.search:
+        return const _DialogInsets(left: 18, right: 18, top: 102, bottom: 0);
+      case _SendStage.amount:
+        return const _DialogInsets(left: 28, right: 28, top: 286, bottom: 384);
+      case _SendStage.confirm:
+        return const _DialogInsets(left: 28, right: 28, top: 314, bottom: 406);
+      case _SendStage.hidden:
+        return const _DialogInsets();
     }
-    if (stage == _SendStage.amount) {
-      return 294;
-    }
-    if (showResults) {
-      return 230;
-    }
-    if (stage == _SendStage.hidden) {
-      return 0;
-    }
-    return 278;
   }
 }
 
-class _RecordingStatusBar extends StatelessWidget {
-  const _RecordingStatusBar();
+class _DialogInsets {
+  const _DialogInsets({
+    this.left = 0,
+    this.right = 0,
+    this.top = 0,
+    this.bottom = 0,
+  });
+
+  final double left;
+  final double right;
+  final double top;
+  final double bottom;
+}
+
+class _AnimatedDialogShell extends StatelessWidget {
+  const _AnimatedDialogShell({required this.stage, required this.child});
+
+  final _SendStage stage;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(
-          width: 74,
-          child: Text(
-            '19:01',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const Spacer(),
-        Container(
-          width: 150,
-          height: 32,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0xFF47101A), width: 1.5),
-          ),
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: 26),
-          child: Container(
-            width: 13,
-            height: 13,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFF304F),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        const Spacer(),
-        const SizedBox(
-          width: 122,
-          child: Text(
-            '▮▮▮  WiFi  24',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
+    if (stage != _SendStage.search) {
+      return child;
+    }
+
+    return TweenAnimationBuilder<double>(
+      key: const ValueKey('send-dialog-entry-animation'),
+      tween: Tween(begin: 1, end: 0),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, animatedChild) {
+        return Transform.translate(
+          offset: Offset(0, value * 220),
+          child: Opacity(opacity: 1 - (value * 0.18), child: animatedChild),
+        );
+      },
+      child: child,
     );
   }
 }
@@ -413,10 +746,18 @@ class _SendRobuxDialog extends StatelessWidget {
   const _SendRobuxDialog({
     required this.stage,
     required this.selectedUser,
+    required this.friends,
+    required this.robuxBalance,
     required this.usernameController,
     required this.amountController,
     required this.showResults,
+    required this.submittedSearchQuery,
     required this.onUserSelected,
+    required this.onSearchSubmitted,
+    required this.onAddFriendRequested,
+    required this.onEditFriendRequested,
+    required this.onDeleteFriendRequested,
+    required this.onEditBalanceRequested,
     required this.onNext,
     required this.onSend,
     required this.onClose,
@@ -425,10 +766,18 @@ class _SendRobuxDialog extends StatelessWidget {
 
   final _SendStage stage;
   final _ReferenceUser selectedUser;
+  final List<_ReferenceUser> friends;
+  final int robuxBalance;
   final TextEditingController usernameController;
   final TextEditingController amountController;
   final bool showResults;
+  final String? submittedSearchQuery;
   final ValueChanged<_ReferenceUser> onUserSelected;
+  final VoidCallback onSearchSubmitted;
+  final VoidCallback onAddFriendRequested;
+  final ValueChanged<_ReferenceUser> onEditFriendRequested;
+  final ValueChanged<_ReferenceUser> onDeleteFriendRequested;
+  final VoidCallback onEditBalanceRequested;
   final VoidCallback onNext;
   final VoidCallback onSend;
   final VoidCallback onClose;
@@ -436,11 +785,18 @@ class _SendRobuxDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSearchStage = stage == _SendStage.search;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      padding: EdgeInsets.fromLTRB(
+        isSearchStage ? 24 : 14,
+        isSearchStage ? 20 : 13,
+        isSearchStage ? 24 : 14,
+        isSearchStage ? 28 : 14,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(isSearchStage ? 22 : 13),
         boxShadow: const [
           BoxShadow(
             color: Color(0x44000000),
@@ -450,16 +806,29 @@ class _SendRobuxDialog extends StatelessWidget {
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: isSearchStage ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _DialogHeader(onClose: onClose),
-          const SizedBox(height: 10),
+          _DialogHeader(
+            onClose: onClose,
+            large: isSearchStage,
+            robuxBalance: robuxBalance,
+            onEditBalanceRequested: onEditBalanceRequested,
+          ),
+          SizedBox(height: isSearchStage ? 22 : 10),
           if (stage == _SendStage.search)
-            _SearchBody(
-              controller: usernameController,
-              showResults: showResults,
-              onUserSelected: onUserSelected,
+            Expanded(
+              child: _SearchBody(
+                controller: usernameController,
+                friends: friends,
+                showResults: showResults,
+                submittedSearchQuery: submittedSearchQuery,
+                onUserSelected: onUserSelected,
+                onSearchSubmitted: onSearchSubmitted,
+                onAddFriendRequested: onAddFriendRequested,
+                onEditFriendRequested: onEditFriendRequested,
+                onDeleteFriendRequested: onDeleteFriendRequested,
+              ),
             ),
           if (stage == _SendStage.amount)
             _AmountBody(
@@ -470,6 +839,7 @@ class _SendRobuxDialog extends StatelessWidget {
           if (stage == _SendStage.confirm)
             _ConfirmBody(
               amount: amountController.text.trim(),
+              robuxBalance: robuxBalance,
               selectedUser: selectedUser,
               onSend: onSend,
               onExit: onExit,
@@ -481,50 +851,79 @@ class _SendRobuxDialog extends StatelessWidget {
 }
 
 class _DialogHeader extends StatelessWidget {
-  const _DialogHeader({required this.onClose});
+  const _DialogHeader({
+    required this.onClose,
+    required this.robuxBalance,
+    required this.onEditBalanceRequested,
+    this.large = false,
+  });
 
   final VoidCallback onClose;
+  final int robuxBalance;
+  final VoidCallback onEditBalanceRequested;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
+    final displayBalance =
+        large
+            ? _formatRobuxAmount('$robuxBalance')
+            : _formatCompactBalance(robuxBalance);
+
     return Row(
       children: [
-        const Icon(Icons.adjust_rounded, size: 14, color: Color(0xFF1E222B)),
-        const SizedBox(width: 6),
-        const Text(
-          'Send Robux',
-          style: TextStyle(
-            color: Color(0xFF1E222B),
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+        _HeaderRobuxIcon(size: large ? 24 : 14, color: const Color(0xFF1E222B)),
+        SizedBox(width: large ? 10 : 6),
+        Expanded(
+          child: Text(
+            'Send Robux',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Color(0xFF1E222B),
+              fontSize: large ? 28 : 12,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
-        const Spacer(),
-        const Icon(Icons.adjust_rounded, size: 12, color: Color(0xFF1E222B)),
-        const SizedBox(width: 4),
-        const Text(
-          '27.7M',
-          style: TextStyle(
-            color: Color(0xFF1E222B),
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
+        SizedBox(width: large ? 14 : 8),
+        GestureDetector(
+          key: const Key('dialog-balance-trigger'),
+          behavior: HitTestBehavior.opaque,
+          onSecondaryTap: onEditBalanceRequested,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _HeaderRobuxIcon(
+                size: large ? 18 : 12,
+                color: const Color(0xFF1E222B),
+              ),
+              SizedBox(width: large ? 9 : 4),
+              Text(
+                displayBalance,
+                style: TextStyle(
+                  color: const Color(0xFF1E222B),
+                  fontSize: large ? 22 : 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: large ? 18 : 8),
         InkWell(
           key: const Key('close-dialog-button'),
           onTap: onClose,
-          borderRadius: BorderRadius.circular(12),
-          child: const SizedBox(
-            width: 22,
-            height: 22,
+          borderRadius: BorderRadius.circular(18),
+          child: SizedBox(
+            width: large ? 34 : 22,
+            height: large ? 34 : 22,
             child: Center(
               child: Text(
-                'x',
+                '×',
                 style: TextStyle(
-                  color: Color(0xFF1E222B),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF1E222B),
+                  fontSize: large ? 24 : 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -538,17 +937,37 @@ class _DialogHeader extends StatelessWidget {
 class _SearchBody extends StatelessWidget {
   const _SearchBody({
     required this.controller,
+    required this.friends,
     required this.showResults,
+    required this.submittedSearchQuery,
     required this.onUserSelected,
+    required this.onSearchSubmitted,
+    required this.onAddFriendRequested,
+    required this.onEditFriendRequested,
+    required this.onDeleteFriendRequested,
   });
 
   final TextEditingController controller;
+  final List<_ReferenceUser> friends;
   final bool showResults;
+  final String? submittedSearchQuery;
   final ValueChanged<_ReferenceUser> onUserSelected;
+  final VoidCallback onSearchSubmitted;
+  final VoidCallback onAddFriendRequested;
+  final ValueChanged<_ReferenceUser> onEditFriendRequested;
+  final ValueChanged<_ReferenceUser> onDeleteFriendRequested;
 
   @override
   Widget build(BuildContext context) {
-    final results = _searchUsers(controller.text);
+    final includeSubmittedFallback =
+        submittedSearchQuery != null &&
+        submittedSearchQuery == controller.text.trim();
+    final results = _searchUsers(
+      controller.text,
+      friends,
+      includeSubmittedFallback: includeSubmittedFallback,
+    );
+    final showFriendsEmpty = !showResults;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,49 +975,126 @@ class _SearchBody extends StatelessWidget {
         _DialogTextField(
           key: const Key('username-input'),
           controller: controller,
-          hintText: 'Enter username',
+          hintText: 'Search by username',
+          onSubmitted: (_) => onSearchSubmitted(),
+          large: true,
         ),
-        const SizedBox(height: 11),
-        const Row(
-          children: [
-            Icon(
-              Icons.person_search_rounded,
-              size: 13,
-              color: Color(0xFF505666),
-            ),
-            SizedBox(width: 5),
-            Text(
-              'Search results',
-              style: TextStyle(
-                color: Color(0xFF303541),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (!showResults)
-          const Text(
-            'Start typing to search Roblox users',
-            style: TextStyle(
-              color: Color(0xFF737987),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+        const SizedBox(height: 34),
+        if (showFriendsEmpty) ...[
+          Text(
+            'My friends (${friends.length})',
+            style: const TextStyle(
+              color: Color(0xFF454B5A),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: GestureDetector(
+              key: const Key('friends-empty-zone'),
+              behavior: HitTestBehavior.opaque,
+              onSecondaryTapDown: (details) async {
+                final overlay =
+                    Overlay.of(context).context.findRenderObject() as RenderBox;
+                final action = await showMenu<_FriendMenuAction>(
+                  context: context,
+                  position: RelativeRect.fromRect(
+                    Rect.fromLTWH(
+                      details.globalPosition.dx,
+                      details.globalPosition.dy,
+                      0,
+                      0,
+                    ),
+                    Offset.zero & overlay.size,
+                  ),
+                  items: const [
+                    PopupMenuItem(
+                      value: _FriendMenuAction.add,
+                      child: Text('Add friend'),
+                    ),
+                  ],
+                );
+                if (action == _FriendMenuAction.add) {
+                  onAddFriendRequested();
+                }
+              },
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ...friends.map(
+                    (user) => _ResultRow(
+                      user: user,
+                      onTap: () => onUserSelected(user),
+                      onEdit: () => onEditFriendRequested(user),
+                      onDelete: () => onDeleteFriendRequested(user),
+                    ),
+                  ),
+                  if (friends.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 42),
+                      child: Center(
+                        child: Text(
+                          'No friends',
+                          style: TextStyle(
+                            color: Color(0xFF737987),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 360),
+                ],
+              ),
+            ),
+          ),
+        ],
         if (showResults && results.isEmpty)
-          const Text(
-            'No users found',
-            style: TextStyle(
-              color: Color(0xFF737987),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+          const Expanded(
+            child: Center(
+              child: Text(
+                'No users found',
+                style: TextStyle(
+                  color: Color(0xFF737987),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
         if (showResults && results.isNotEmpty)
-          ...results.map(
-            (user) => _ResultRow(user: user, onTap: () => onUserSelected(user)),
+          const Text(
+            'Search results',
+            style: TextStyle(
+              color: Color(0xFF454B5A),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        if (showResults && results.isNotEmpty) const SizedBox(height: 16),
+        if (showResults && results.isNotEmpty)
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children:
+                  results
+                      .map(
+                        (user) => _ResultRow(
+                          user: user,
+                          onTap: () => onUserSelected(user),
+                          onEdit:
+                              user.isFriend
+                                  ? () => onEditFriendRequested(user)
+                                  : null,
+                          onDelete:
+                              user.isFriend
+                                  ? () => onDeleteFriendRequested(user)
+                                  : null,
+                        ),
+                      )
+                      .toList(),
+            ),
           ),
       ],
     );
@@ -618,36 +1114,63 @@ class _AmountBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasAmount = controller.text.trim().isNotEmpty;
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final rawAmount = value.text.trim();
+        final hasAmount = rawAmount.isNotEmpty;
+        final displayAmount = _formatRobuxAmount(rawAmount);
 
-    return Column(
-      children: [
-        _SelectedUserHeader(user: selectedUser),
-        const SizedBox(height: 13),
-        _DialogTextField(
-          key: const Key('amount-input'),
-          controller: controller,
-          hintText: 'Amount',
-          keyboardType: TextInputType.number,
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Column(
           children: [
-            _AmountPill(label: '25', onTap: () => controller.text = '25'),
-            _AmountPill(label: '50', onTap: () => controller.text = '50'),
-            _AmountPill(label: '100', onTap: () => controller.text = '100'),
-            _AmountPill(label: '200', onTap: () => controller.text = '200'),
+            _SelectedUserHeader(user: selectedUser, amountText: displayAmount),
+            const SizedBox(height: 18),
+            _AmountEntryField(controller: controller),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _AmountPill(
+                    label: '25',
+                    onTap: () => controller.text = '25',
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: _AmountPill(
+                    label: '50',
+                    onTap: () => controller.text = '50',
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: _AmountPill(
+                    label: '100',
+                    onTap: () => controller.text = '100',
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: _AmountPill(
+                    label: '200',
+                    onTap: () => controller.text = '200',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _ActionButton(
+              key: const Key('amount-next-button'),
+              label: 'Next',
+              enabled: hasAmount,
+              onTap: onNext,
+              height: 48,
+              fontSize: 18,
+              borderRadius: 12,
+            ),
           ],
-        ),
-        const SizedBox(height: 12),
-        _ActionButton(
-          key: const Key('amount-next-button'),
-          label: 'Next',
-          enabled: hasAmount,
-          onTap: onNext,
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -655,12 +1178,14 @@ class _AmountBody extends StatelessWidget {
 class _ConfirmBody extends StatelessWidget {
   const _ConfirmBody({
     required this.amount,
+    required this.robuxBalance,
     required this.selectedUser,
     required this.onSend,
     required this.onExit,
   });
 
   final String amount;
+  final int robuxBalance;
   final _ReferenceUser selectedUser;
   final VoidCallback onSend;
   final VoidCallback onExit;
@@ -668,6 +1193,10 @@ class _ConfirmBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayAmount = _formatRobuxAmount(amount);
+    final parsedAmount = int.tryParse(amount.replaceAll(',', '')) ?? 0;
+    final hasEnoughBalance = parsedAmount > 0 && parsedAmount <= robuxBalance;
+    final shortfall =
+        parsedAmount > robuxBalance ? parsedAmount - robuxBalance : 0;
 
     return Column(
       children: [
@@ -681,6 +1210,20 @@ class _ConfirmBody extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
+        const SizedBox(height: 8),
+        Text(
+          hasEnoughBalance
+              ? 'Balance after send: ${_formatRobuxAmount('${robuxBalance - parsedAmount}')}'
+              : 'Need ${_formatRobuxAmount('$shortfall')} more Robux',
+          style: TextStyle(
+            color:
+                hasEnoughBalance
+                    ? const Color(0xFF6E7587)
+                    : const Color(0xFFD14C4C),
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -688,7 +1231,7 @@ class _ConfirmBody extends StatelessWidget {
               child: _ActionButton(
                 key: const Key('confirm-send-button'),
                 label: 'Send',
-                enabled: true,
+                enabled: hasEnoughBalance,
                 onTap: onSend,
               ),
             ),
@@ -706,40 +1249,49 @@ class _DialogTextField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.hintText,
-    this.keyboardType,
+    this.onSubmitted,
+    this.large = false,
   });
 
   final TextEditingController controller;
   final String hintText;
-  final TextInputType? keyboardType;
+  final ValueChanged<String>? onSubmitted;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 34,
+      height: large ? 76 : 34,
       child: TextField(
         controller: controller,
-        keyboardType: keyboardType,
-        style: const TextStyle(
-          color: Color(0xFF1B1F2A),
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        onSubmitted: onSubmitted,
+        textInputAction: TextInputAction.search,
+        style: TextStyle(
+          color: const Color(0xFF1B1F2A),
+          fontSize: large ? 26 : 12,
+          fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
-            color: Color(0xFF8B90A0),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+          hintStyle: TextStyle(
+            color: const Color(0xFF77809A),
+            fontSize: large ? 26 : 12,
+            fontWeight: FontWeight.w500,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+          contentPadding: EdgeInsets.symmetric(horizontal: large ? 24 : 10),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(7),
-            borderSide: const BorderSide(color: Color(0xFF5E49D6), width: 1.2),
+            borderRadius: BorderRadius.circular(large ? 16 : 7),
+            borderSide: BorderSide(
+              color: const Color(0xFF3E61F1),
+              width: large ? 2.2 : 1.2,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(7),
-            borderSide: const BorderSide(color: Color(0xFF5E49D6), width: 1.4),
+            borderRadius: BorderRadius.circular(large ? 16 : 7),
+            borderSide: BorderSide(
+              color: const Color(0xFF3E61F1),
+              width: large ? 2.6 : 1.4,
+            ),
           ),
         ),
       ),
@@ -747,46 +1299,136 @@ class _DialogTextField extends StatelessWidget {
   }
 }
 
-class _ResultRow extends StatelessWidget {
-  const _ResultRow({required this.user, required this.onTap});
+class _AmountEntryField extends StatelessWidget {
+  const _AmountEntryField({required this.controller});
 
-  final _ReferenceUser user;
-  final VoidCallback onTap;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            _AvatarMark(user: user, size: 28),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: const TextStyle(
-                      color: Color(0xFF171B24),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    user.handle,
-                    style: const TextStyle(
-                      color: Color(0xFF7B8190),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F7FD),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              key: const Key('amount-input'),
+              controller: controller,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(
+                color: Color(0xFF1B1F2A),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Amount',
+                hintStyle: TextStyle(
+                  color: Color(0xFF7A8294),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                border: InputBorder.none,
+                isCollapsed: true,
               ),
             ),
+          ),
+          const SizedBox(width: 10),
+          const Icon(
+            Icons.unfold_more_rounded,
+            size: 16,
+            color: Color(0xFF6F7788),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultRow extends StatelessWidget {
+  const _ResultRow({
+    required this.user,
+    required this.onTap,
+    this.onEdit,
+    this.onDelete,
+  });
+
+  final _ReferenceUser user;
+  final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: Key('friend-row-${user.id}'),
+      behavior: HitTestBehavior.opaque,
+      onSecondaryTapDown: (details) async {
+        if (onEdit == null && onDelete == null) {
+          return;
+        }
+
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        final action = await showMenu<_FriendMenuAction>(
+          context: context,
+          position: RelativeRect.fromRect(
+            Rect.fromLTWH(
+              details.globalPosition.dx,
+              details.globalPosition.dy,
+              0,
+              0,
+            ),
+            Offset.zero & overlay.size,
+          ),
+          items: const [
+            PopupMenuItem(
+              value: _FriendMenuAction.edit,
+              child: Text('Edit friend'),
+            ),
+            PopupMenuItem(
+              value: _FriendMenuAction.delete,
+              child: Text('Delete friend'),
+            ),
           ],
+        );
+
+        if (action == _FriendMenuAction.edit) {
+          onEdit?.call();
+        }
+        if (action == _FriendMenuAction.delete) {
+          onDelete?.call();
+        }
+      },
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.name,
+                style: const TextStyle(
+                  color: Color(0xFF171B24),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                user.handle,
+                style: const TextStyle(
+                  color: Color(0xFF7B8190),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -794,26 +1436,50 @@ class _ResultRow extends StatelessWidget {
 }
 
 class _SelectedUserHeader extends StatelessWidget {
-  const _SelectedUserHeader({required this.user, this.showMeta = false});
+  const _SelectedUserHeader({
+    required this.user,
+    this.showMeta = false,
+    this.amountText,
+  });
 
   final _ReferenceUser user;
   final bool showMeta;
+  final String? amountText;
 
   @override
   Widget build(BuildContext context) {
+    final amountLabel =
+        amountText == null || amountText == '0' ? '0' : amountText!;
+
     return Column(
       children: [
-        _AvatarMark(user: user),
-        const SizedBox(height: 7),
         Text(
           user.name,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: Color(0xFF171B24),
-            fontSize: 12,
+            fontSize: showMeta ? 14 : 16,
             fontWeight: FontWeight.w900,
           ),
         ),
+        if (!showMeta) ...[
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const _HeaderRobuxIcon(size: 12, color: Color(0xFF555D70)),
+              const SizedBox(width: 6),
+              Text(
+                amountLabel,
+                style: const TextStyle(
+                  color: Color(0xFF555D70),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ],
         if (showMeta) ...[
           const SizedBox(height: 5),
           Text(
@@ -842,52 +1508,28 @@ class _AmountPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(11),
       child: Container(
-        width: 50,
-        height: 28,
+        height: 48,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F1F5),
-          borderRadius: BorderRadius.circular(999),
+          color: const Color(0xFFF5F6FC),
+          borderRadius: BorderRadius.circular(11),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF252A35),
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AvatarMark extends StatelessWidget {
-  const _AvatarMark({required this.user, this.size = 52});
-
-  final _ReferenceUser user;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = user.name.isEmpty ? '?' : user.name.characters.first;
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: user.avatarColor,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        initial.toUpperCase(),
-        style: TextStyle(
-          color: const Color(0xFF171B24),
-          fontSize: size * 0.32,
-          fontWeight: FontWeight.w900,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const _HeaderRobuxIcon(size: 12, color: Color(0xFF252A35)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF252A35),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -937,35 +1579,121 @@ class _SuccessToast extends StatelessWidget {
   }
 }
 
+class _HeaderRobuxIcon extends StatelessWidget {
+  const _HeaderRobuxIcon({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _HeaderRobuxIconPainter(color: color, strokeWidth: size * 0.1),
+      ),
+    );
+  }
+}
+
+class _HeaderRobuxIconPainter extends CustomPainter {
+  const _HeaderRobuxIconPainter({
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final strokePaint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeJoin = StrokeJoin.round;
+    final fillPaint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill;
+
+    canvas.drawPath(
+      _hexagon(center: center, radius: size.width * 0.46),
+      strokePaint,
+    );
+    canvas.drawPath(
+      _hexagon(center: center, radius: size.width * 0.29),
+      strokePaint,
+    );
+    final squareSize = size.width * 0.19;
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: squareSize, height: squareSize),
+      fillPaint,
+    );
+  }
+
+  Path _hexagon({required Offset center, required double radius}) {
+    final path = Path();
+    for (int index = 0; index < 6; index++) {
+      final angle = (-3.141592653589793 / 2) + (index * 3.141592653589793 / 3);
+      final point = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+      if (index == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeaderRobuxIconPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+  }
+}
+
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     super.key,
     required this.label,
     required this.enabled,
     this.onTap,
+    this.height = 34,
+    this.fontSize = 11,
+    this.borderRadius = 7,
   });
 
   final String label;
   final bool enabled;
   final VoidCallback? onTap;
+  final double height;
+  final double fontSize;
+  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(borderRadius),
       child: Container(
-        height: 34,
+        height: height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: enabled ? const Color(0xFF5A43F1) : const Color(0xFFE1E3EA),
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: enabled ? Colors.white : const Color(0xFF9AA0AD),
-            fontSize: 11,
+            fontSize: fontSize,
             fontWeight: FontWeight.w900,
           ),
         ),
