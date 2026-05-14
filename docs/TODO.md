@@ -36,6 +36,7 @@
 - [x] Add a LAN preview path through Flutter `web-server` so the app can be opened from phones on the same local network
 - [x] Add a Windows release zip flow with a built-in PowerShell LAN server so the handoff no longer depends on Flutter being installed
 - [x] Add GitHub Pages deployment so the current Flutter web build can be shared without a local server
+- [x] Replace right-click-only editing with adaptive long-press actions for web/mobile while keeping desktop-app right-click support
 
 ## Next
 
@@ -75,3 +76,4 @@
 - Current narrow-screen responsiveness: the mobile web path now also scales down header spacing, hero typography, balance strip, and package card widths so the filled viewport no longer overflows after the black side bars were removed.
 - Current mobile dialog spacing: narrow screens now add dedicated horizontal dialog inset padding so the Send Robux sheets no longer sit too tightly against the viewport edges.
 - Current public deployment: the repository now includes `.github/workflows/deploy-pages.yml`, so pushes to `main` build Flutter web and publish the result to `https://2297832974.github.io/`.
+- Current edit interaction: web now uses long-press for balance and friend management, while desktop app builds keep the same flows plus right-click as a shortcut.

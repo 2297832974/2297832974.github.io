@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'widgets/adaptive_action_menu.dart';
 import 'widgets/robux_home_page.dart';
 
 enum _SendStage { search, amount, confirm, hidden }
@@ -687,10 +688,7 @@ class _VideoAppSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(isCompact ? 0 : 18),
-        border:
-            isCompact
-                ? null
-                : Border.all(color: const Color(0xFF1A1A1A)),
+        border: isCompact ? null : Border.all(color: const Color(0xFF1A1A1A)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -950,18 +948,10 @@ class _SendRobuxDialog extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        isSearchStage
-            ? (isCompact ? 14 : 18)
-            : (isCompact ? 12 : 14),
-        isSearchStage
-            ? (isCompact ? 14 : 16)
-            : (isCompact ? 12 : 13),
-        isSearchStage
-            ? (isCompact ? 14 : 18)
-            : (isCompact ? 12 : 14),
-        isSearchStage
-            ? (isCompact ? 14 : 18)
-            : (isCompact ? 12 : 14),
+        isSearchStage ? (isCompact ? 14 : 18) : (isCompact ? 12 : 14),
+        isSearchStage ? (isCompact ? 14 : 16) : (isCompact ? 12 : 13),
+        isSearchStage ? (isCompact ? 14 : 18) : (isCompact ? 12 : 14),
+        isSearchStage ? (isCompact ? 14 : 18) : (isCompact ? 12 : 14),
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1038,6 +1028,7 @@ class _DialogHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final enableSecondaryTap = supportsDesktopSecondaryActions(context);
     final displayBalance =
         large
             ? _formatRobuxAmount('$robuxBalance')
@@ -1067,7 +1058,8 @@ class _DialogHeader extends StatelessWidget {
         GestureDetector(
           key: const Key('dialog-balance-trigger'),
           behavior: HitTestBehavior.opaque,
-          onSecondaryTap: onEditBalanceRequested,
+          onSecondaryTap: enableSecondaryTap ? onEditBalanceRequested : null,
+          onLongPress: onEditBalanceRequested,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1141,6 +1133,7 @@ class _SearchBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final enableSecondaryTap = supportsDesktopSecondaryActions(context);
     final useSubmittedResults =
         submittedSearchQuery != null &&
         submittedSearchQuery == controller.text.trim();
@@ -1209,30 +1202,23 @@ class _SearchBody extends StatelessWidget {
           child: GestureDetector(
             key: const Key('friends-empty-zone'),
             behavior: HitTestBehavior.opaque,
+            onLongPress: showFriendsEmpty ? onAddFriendRequested : null,
             onSecondaryTapDown:
-                showFriendsEmpty
+                showFriendsEmpty && enableSecondaryTap
                     ? (details) async {
-                      final overlay =
-                          Overlay.of(context).context.findRenderObject()
-                              as RenderBox;
-                      final action = await showMenu<_FriendMenuAction>(
-                        context: context,
-                        position: RelativeRect.fromRect(
-                          Rect.fromLTWH(
-                            details.globalPosition.dx,
-                            details.globalPosition.dy,
-                            0,
-                            0,
-                          ),
-                          Offset.zero & overlay.size,
-                        ),
-                        items: const [
-                          PopupMenuItem(
-                            value: _FriendMenuAction.add,
-                            child: Text('Add friend'),
-                          ),
-                        ],
-                      );
+                      final action =
+                          await showAdaptiveActionMenu<_FriendMenuAction>(
+                            context,
+                            globalPosition: details.globalPosition,
+                            title: 'Friends',
+                            items: const [
+                              AdaptiveActionItem(
+                                value: _FriendMenuAction.add,
+                                label: 'Add friend',
+                                icon: Icons.person_add_alt_1_rounded,
+                              ),
+                            ],
+                          );
                       if (action == _FriendMenuAction.add) {
                         onAddFriendRequested();
                       }
@@ -1263,7 +1249,9 @@ class _SearchBody extends StatelessWidget {
                         children: [
                           ListView(
                             primary: false,
-                            padding: EdgeInsets.only(right: isCompact ? 14 : 18),
+                            padding: EdgeInsets.only(
+                              right: isCompact ? 14 : 18,
+                            ),
                             children: scrollItems,
                           ),
                           if (scrollItems.length > 5)
@@ -1468,10 +1456,7 @@ class _DialogTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height:
-          large
-              ? 76
-              : (compact ? 30 : 34),
+      height: large ? 76 : (compact ? 30 : 34),
       child: TextField(
         controller: controller,
         onSubmitted: onSubmitted,
@@ -1579,68 +1564,82 @@ class _ResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enableSecondaryTap = supportsDesktopSecondaryActions(context);
+
+    Future<void> showActions([Offset? globalPosition]) async {
+      if (onEdit == null && onDelete == null) {
+        return;
+      }
+
+      final action = await showAdaptiveActionMenu<_FriendMenuAction>(
+        context,
+        globalPosition: globalPosition,
+        title: user.name,
+        items: [
+          if (onEdit != null)
+            const AdaptiveActionItem(
+              value: _FriendMenuAction.edit,
+              label: 'Edit friend',
+              icon: Icons.edit_rounded,
+            ),
+          if (onDelete != null)
+            const AdaptiveActionItem(
+              value: _FriendMenuAction.delete,
+              label: 'Delete friend',
+              icon: Icons.delete_outline_rounded,
+              isDestructive: true,
+            ),
+        ],
+      );
+
+      if (action == _FriendMenuAction.edit) {
+        onEdit?.call();
+      }
+      if (action == _FriendMenuAction.delete) {
+        onDelete?.call();
+      }
+    }
+
     return GestureDetector(
       key: Key('friend-row-${user.id}'),
       behavior: HitTestBehavior.opaque,
-      onSecondaryTapDown: (details) async {
-        if (onEdit == null && onDelete == null) {
-          return;
-        }
-
-        final overlay =
-            Overlay.of(context).context.findRenderObject() as RenderBox;
-        final action = await showMenu<_FriendMenuAction>(
-          context: context,
-          position: RelativeRect.fromRect(
-            Rect.fromLTWH(
-              details.globalPosition.dx,
-              details.globalPosition.dy,
-              0,
-              0,
-            ),
-            Offset.zero & overlay.size,
-          ),
-          items: const [
-            PopupMenuItem(
-              value: _FriendMenuAction.edit,
-              child: Text('Edit friend'),
-            ),
-            PopupMenuItem(
-              value: _FriendMenuAction.delete,
-              child: Text('Delete friend'),
-            ),
-          ],
-        );
-
-        if (action == _FriendMenuAction.edit) {
-          onEdit?.call();
-        }
-        if (action == _FriendMenuAction.delete) {
-          onDelete?.call();
-        }
-      },
+      onLongPress:
+          onEdit != null || onDelete != null ? () => showActions() : null,
+      onSecondaryTapDown:
+          enableSecondaryTap
+              ? (details) async {
+                await showActions(details.globalPosition);
+              }
+              : null,
       child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: EdgeInsets.only(bottom: compact ? 10 : 14),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                user.name,
-                style: TextStyle(
-                  color: Color(0xFF171B24),
-                  fontSize: compact ? 12 : 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                user.handle,
-                style: TextStyle(
-                  color: Color(0xFF7B8190),
-                  fontSize: compact ? 11 : 14,
-                  fontWeight: compact ? FontWeight.w500 : FontWeight.w600,
-                  height: 1.15,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: TextStyle(
+                        color: const Color(0xFF171B24),
+                        fontSize: compact ? 12 : 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      user.handle,
+                      style: TextStyle(
+                        color: const Color(0xFF7B8190),
+                        fontSize: compact ? 11 : 14,
+                        fontWeight: compact ? FontWeight.w500 : FontWeight.w600,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

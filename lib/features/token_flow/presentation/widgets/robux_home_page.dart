@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'adaptive_action_menu.dart';
+
 class RobuxHomePage extends StatelessWidget {
   const RobuxHomePage({
     super.key,
@@ -248,6 +250,8 @@ class _RobuxAccountStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enableSecondaryTap = supportsDesktopSecondaryActions(context);
+
     return Container(
       height: isCompact ? 74 : 90,
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 14 : 24),
@@ -260,7 +264,8 @@ class _RobuxAccountStrip extends StatelessWidget {
           GestureDetector(
             key: const Key('home-balance-trigger'),
             behavior: HitTestBehavior.opaque,
-            onSecondaryTap: onEditBalanceRequested,
+            onSecondaryTap: enableSecondaryTap ? onEditBalanceRequested : null,
+            onLongPress: onEditBalanceRequested,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

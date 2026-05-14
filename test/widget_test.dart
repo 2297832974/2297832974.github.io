@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:token_buy/app/token_buy_app.dart';
@@ -140,10 +139,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const TokenBuyApp());
 
-    await tester.tap(
-      find.byKey(const Key('home-balance-trigger')),
-      buttons: kSecondaryMouseButton,
-    );
+    await tester.longPress(find.byKey(const Key('home-balance-trigger')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('balance-input')), '10000');
     await tester.tap(find.text('Save'));
@@ -202,10 +198,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const TokenBuyApp());
 
-    await tester.tap(
-      find.byKey(const Key('home-balance-trigger')),
-      buttons: kSecondaryMouseButton,
-    );
+    await tester.longPress(find.byKey(const Key('home-balance-trigger')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('balance-input')), '100');
     await tester.tap(find.text('Save'));
