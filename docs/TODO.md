@@ -33,6 +33,9 @@
 - [x] Rebuild the selected-user amount sheet to match the reference layout more closely
 - [x] Remove avatar rendering from the Send Robux flow, friends list, and search results
 - [x] Rework the Robux home hero and package pricing column while keeping the preferred light base theme
+- [x] Add a LAN preview path through Flutter `web-server` so the app can be opened from phones on the same local network
+- [x] Add a Windows release zip flow with a built-in PowerShell LAN server so the handoff no longer depends on Flutter being installed
+- [x] Add GitHub Pages deployment so the current Flutter web build can be shared without a local server
 
 ## Next
 
@@ -40,6 +43,7 @@
 - [ ] Refine the Robux home page spacing, icons, avatar, and package rows against the latest screenshot and dense frames
 - [ ] Add tests for restored state transitions and key visible video regions
 - [ ] Add screenshot-based visual verification after the restoration stabilizes
+- [ ] Verify the first public GitHub Pages publish against the current mobile web layout
 
 ## Notes
 
@@ -58,4 +62,16 @@
 - Current balance behavior: the home/header Robux balance is shared state, supports right-click editing, and drops by the sent amount after each successful send.
 - Current guardrail: the confirm step disables `Send` when balance is insufficient and shows how much additional Robux is needed.
 - Current home-page alignment: the home screen is back on the preferred light base theme, with the `3,625 / £34.99` package row highlighted by default and no extra lower-left package tag.
-- Current hero heading: the `Enjoy up to 25% more Robux` title has been scaled up again and now uses a larger 70px headline size for a stronger official-style presence.
+- Current hero heading: the `Enjoy up to 25% more Robux` title now uses platform-tuned sizing so Windows uses a slightly reduced 72px headline to preserve the intended two-line wrap, while macOS stays at a more natural 60px size.
+- Current LAN preview: the project now includes `web` support plus `scripts/start_lan_preview.sh` and `scripts/start_lan_preview.bat`, so a computer can host the UI for phones on the same LAN via Flutter's `web-server` device.
+- Current Windows startup UX: `scripts/start_lan_preview.bat` now auto-detects a LAN IPv4 address and prints a phone-ready `http://<ip>:<port>` URL before launching the Flutter web server.
+- Current Windows handoff: `scripts/package_windows_web_release.sh` assembles `dist/token-buy-windows-lan-release.zip`, which bundles the built web app with a PowerShell static server and a double-click `start_server.bat` entrypoint.
+- Current Windows server robustness: the packaged `serve_web.ps1` now uses a raw TCP listener instead of `HttpListener`, reducing the chance of admin-only URL reservation failures on end-user machines.
+- Current port strategy: both Windows launch paths now prefer `8080` but automatically fall forward to the next available port when it is occupied, and they print the final phone-ready URL after the fallback.
+- Current process strategy: the packaged Windows release launcher now keeps a `server_state.json` record, stops the previous release-folder server on each launch, clears stale state automatically, and then starts a fresh process.
+- Current Win port probing: the packaged server now tests candidate ports with the same `IPAddress.Any` binding it later uses for the real listener, avoiding false positives when another process already occupies `0.0.0.0:8080`.
+- Current mobile web layout: narrow viewports now bypass the centered `FittedBox` shell and let the restored app surface expand to the full safe viewport, removing the black side bars on phones.
+- Current macOS launcher: `scripts/start_lan_preview.sh` now probes `0.0.0.0` ports directly, auto-falls forward when `8080` is busy, and prints a phone-ready LAN URL before launching Flutter's web server.
+- Current narrow-screen responsiveness: the mobile web path now also scales down header spacing, hero typography, balance strip, and package card widths so the filled viewport no longer overflows after the black side bars were removed.
+- Current mobile dialog spacing: narrow screens now add dedicated horizontal dialog inset padding so the Send Robux sheets no longer sit too tightly against the viewport edges.
+- Current public deployment: the repository now includes `.github/workflows/deploy-pages.yml`, so pushes to `main` build Flutter web and publish the result to `https://2297832974.github.io/`.

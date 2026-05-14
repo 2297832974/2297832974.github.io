@@ -108,12 +108,11 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('friend-row-search-sonic')), findsOneWidget);
-      expect(find.text('SonicBacon'), findsAtLeastNWidgets(1));
 
-      await tester.tap(find.text('SonicBacon').first);
+      await tester.tap(find.byKey(const Key('friend-row-search-sonic')));
       await tester.pump();
 
-      expect(find.text('SonicBacon'), findsOneWidget);
+      expect(find.byKey(const Key('friend-row-search-sonic')), findsNothing);
       expect(find.byKey(const Key('amount-input')), findsOneWidget);
     },
   );

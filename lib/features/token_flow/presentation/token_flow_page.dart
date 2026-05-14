@@ -155,40 +155,53 @@ class _TokenFlowPageState extends State<TokenFlowPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: SizedBox(
-              width: 592,
-              height: 1280,
-              child: _VideoAppSurface(
-                stage: _stage,
-                selectedUser: _selectedUser,
-                friends: _friends,
-                robuxBalance: _robuxBalance,
-                usernameController: _usernameController,
-                amountController: _amountController,
-                showResults: _showResults,
-                submittedSearchQuery:
-                    _hasCommittedSearch ? _submittedSearchQuery : null,
-                submittedSearchResults: _submittedSearchResults,
-                showSuccessToast: _showSuccessToast,
-                onUserSelected: _handleUserSelected,
-                onSearchSubmitted: _handleSearchSubmitted,
-                onAddFriendRequested: _handleAddFriendRequested,
-                onEditFriendRequested: _handleEditFriendRequested,
-                onDeleteFriendRequested: _handleDeleteFriendRequested,
-                onEditBalanceRequested: _handleEditBalanceRequested,
-                onNext: _handleNext,
-                onSend: _handleSend,
-                onOpenSendDialog: _handleOpenSendDialog,
-                onClose: _handleCloseDialog,
-                onExit: _handleExit,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final shouldFillViewport = constraints.maxWidth < 700;
+
+            if (shouldFillViewport) {
+              return SizedBox.expand(child: _buildVideoSurface());
+            }
+
+            return Center(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: 592,
+                  height: 1280,
+                  child: _buildVideoSurface(),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _buildVideoSurface() {
+    return _VideoAppSurface(
+      stage: _stage,
+      selectedUser: _selectedUser,
+      friends: _friends,
+      robuxBalance: _robuxBalance,
+      usernameController: _usernameController,
+      amountController: _amountController,
+      showResults: _showResults,
+      submittedSearchQuery: _hasCommittedSearch ? _submittedSearchQuery : null,
+      submittedSearchResults: _submittedSearchResults,
+      showSuccessToast: _showSuccessToast,
+      onUserSelected: _handleUserSelected,
+      onSearchSubmitted: _handleSearchSubmitted,
+      onAddFriendRequested: _handleAddFriendRequested,
+      onEditFriendRequested: _handleEditFriendRequested,
+      onDeleteFriendRequested: _handleDeleteFriendRequested,
+      onEditBalanceRequested: _handleEditBalanceRequested,
+      onNext: _handleNext,
+      onSend: _handleSend,
+      onOpenSendDialog: _handleOpenSendDialog,
+      onClose: _handleCloseDialog,
+      onExit: _handleExit,
     );
   }
 
@@ -668,11 +681,16 @@ class _VideoAppSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 430;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF1A1A1A)),
+        borderRadius: BorderRadius.circular(isCompact ? 0 : 18),
+        border:
+            isCompact
+                ? null
+                : Border.all(color: const Color(0xFF1A1A1A)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -781,6 +799,11 @@ class _DialogOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final horizontalInset = isCompact ? 16.0 : 0.0;
+    final searchTopPadding = isCompact ? 316.0 : 360.0;
+    final searchMaxHeight = isCompact ? 432.0 : 520.0;
+
     final dialog = _SendRobuxDialog(
       stage: stage,
       selectedUser: selectedUser,
@@ -808,9 +831,16 @@ class _DialogOverlay extends StatelessWidget {
         child: Align(
           alignment: Alignment.topCenter,
           child: Padding(
-            padding: const EdgeInsets.only(top: 360),
+            padding: EdgeInsets.only(
+              top: searchTopPadding,
+              left: horizontalInset,
+              right: horizontalInset,
+            ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 470, maxHeight: 520),
+              constraints: BoxConstraints(
+                maxWidth: 470,
+                maxHeight: searchMaxHeight,
+              ),
               child: _AnimatedDialogShell(stage: stage, child: dialog),
             ),
           ),
@@ -818,13 +848,20 @@ class _DialogOverlay extends StatelessWidget {
       );
     }
 
-    final topPadding = stage == _SendStage.amount ? 390.0 : 420.0;
+    final topPadding =
+        stage == _SendStage.amount
+            ? (isCompact ? 360.0 : 390.0)
+            : (isCompact ? 386.0 : 420.0);
 
     return Positioned.fill(
       child: Align(
         alignment: Alignment.topCenter,
         child: Padding(
-          padding: EdgeInsets.only(top: topPadding),
+          padding: EdgeInsets.only(
+            top: topPadding,
+            left: horizontalInset,
+            right: horizontalInset,
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: dialog,
@@ -909,17 +946,28 @@ class _SendRobuxDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSearchStage = stage == _SendStage.search;
+    final isCompact = MediaQuery.sizeOf(context).width < 430;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        isSearchStage ? 18 : 14,
-        isSearchStage ? 16 : 13,
-        isSearchStage ? 18 : 14,
-        isSearchStage ? 18 : 14,
+        isSearchStage
+            ? (isCompact ? 14 : 18)
+            : (isCompact ? 12 : 14),
+        isSearchStage
+            ? (isCompact ? 14 : 16)
+            : (isCompact ? 12 : 13),
+        isSearchStage
+            ? (isCompact ? 14 : 18)
+            : (isCompact ? 12 : 14),
+        isSearchStage
+            ? (isCompact ? 14 : 18)
+            : (isCompact ? 12 : 14),
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(isSearchStage ? 20 : 13),
+        borderRadius: BorderRadius.circular(
+          isSearchStage ? (isCompact ? 18 : 20) : (isCompact ? 12 : 13),
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x44000000),
@@ -938,7 +986,7 @@ class _SendRobuxDialog extends StatelessWidget {
             robuxBalance: robuxBalance,
             onEditBalanceRequested: onEditBalanceRequested,
           ),
-          SizedBox(height: isSearchStage ? 14 : 10),
+          SizedBox(height: isSearchStage ? (isCompact ? 10 : 14) : 8),
           if (stage == _SendStage.search)
             Expanded(
               child: _SearchBody(
@@ -989,6 +1037,7 @@ class _DialogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 430;
     final displayBalance =
         large
             ? _formatRobuxAmount('$robuxBalance')
@@ -996,22 +1045,25 @@ class _DialogHeader extends StatelessWidget {
 
     return Row(
       children: [
-        _HeaderRobuxIcon(size: large ? 24 : 14, color: const Color(0xFF1E222B)),
-        SizedBox(width: large ? 10 : 6),
+        _HeaderRobuxIcon(
+          size: large ? 24 : (isCompact ? 13 : 14),
+          color: const Color(0xFF1E222B),
+        ),
+        SizedBox(width: large ? 10 : (isCompact ? 5 : 6)),
         Expanded(
           child: Text(
             'Send Robux',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Color(0xFF1E222B),
-              fontSize: large ? 28 : 18,
+              color: const Color(0xFF1E222B),
+              fontSize: large ? 28 : (isCompact ? 16 : 18),
               fontWeight: large ? FontWeight.w900 : FontWeight.w800,
               letterSpacing: large ? -0.4 : -0.2,
               height: 1.05,
             ),
           ),
         ),
-        SizedBox(width: large ? 14 : 8),
+        SizedBox(width: large ? 14 : (isCompact ? 6 : 8)),
         GestureDetector(
           key: const Key('dialog-balance-trigger'),
           behavior: HitTestBehavior.opaque,
@@ -1020,15 +1072,15 @@ class _DialogHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _HeaderRobuxIcon(
-                size: large ? 18 : 12,
+                size: large ? 18 : (isCompact ? 11 : 12),
                 color: const Color(0xFF1E222B),
               ),
-              SizedBox(width: large ? 9 : 4),
+              SizedBox(width: large ? 9 : (isCompact ? 3 : 4)),
               Text(
                 displayBalance,
                 style: TextStyle(
                   color: const Color(0xFF1E222B),
-                  fontSize: large ? 22 : 12,
+                  fontSize: large ? 22 : (isCompact ? 11 : 12),
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
                 ),
@@ -1036,20 +1088,20 @@ class _DialogHeader extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(width: large ? 18 : 8),
+        SizedBox(width: large ? 18 : (isCompact ? 6 : 8)),
         InkWell(
           key: const Key('close-dialog-button'),
           onTap: onClose,
           borderRadius: BorderRadius.circular(18),
           child: SizedBox(
-            width: large ? 34 : 22,
-            height: large ? 34 : 22,
+            width: large ? 34 : (isCompact ? 20 : 22),
+            height: large ? 34 : (isCompact ? 20 : 22),
             child: Center(
               child: Text(
                 '×',
                 style: TextStyle(
                   color: const Color(0xFF1E222B),
-                  fontSize: large ? 24 : 14,
+                  fontSize: large ? 24 : (isCompact ? 13 : 14),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1088,6 +1140,7 @@ class _SearchBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 430;
     final useSubmittedResults =
         submittedSearchQuery != null &&
         submittedSearchQuery == controller.text.trim();
@@ -1140,17 +1193,18 @@ class _SearchBody extends StatelessWidget {
           hintText: 'Search by username',
           onSubmitted: (_) => onSearchSubmitted(),
           large: false,
+          compact: isCompact,
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: isCompact ? 10 : 14),
         Text(
           sectionTitle,
-          style: const TextStyle(
-            color: Color(0xFF454B5A),
-            fontSize: 12,
+          style: TextStyle(
+            color: const Color(0xFF454B5A),
+            fontSize: isCompact ? 11 : 12,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: isCompact ? 8 : 10),
         Expanded(
           child: GestureDetector(
             key: const Key('friends-empty-zone'),
@@ -1189,7 +1243,10 @@ class _SearchBody extends StatelessWidget {
                 color: const Color(0xFFF8F8FC),
                 borderRadius: BorderRadius.circular(14),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              padding: EdgeInsets.symmetric(
+                vertical: isCompact ? 8 : 10,
+                horizontal: isCompact ? 8 : 10,
+              ),
               child:
                   scrollItems.isEmpty
                       ? const Center(
@@ -1206,7 +1263,7 @@ class _SearchBody extends StatelessWidget {
                         children: [
                           ListView(
                             primary: false,
-                            padding: const EdgeInsets.only(right: 18),
+                            padding: EdgeInsets.only(right: isCompact ? 14 : 18),
                             children: scrollItems,
                           ),
                           if (scrollItems.length > 5)
@@ -1257,6 +1314,7 @@ class _AmountBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 430;
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, _) {
@@ -1267,48 +1325,52 @@ class _AmountBody extends StatelessWidget {
         return Column(
           children: [
             _SelectedUserHeader(user: selectedUser, amountText: displayAmount),
-            const SizedBox(height: 18),
-            _AmountEntryField(controller: controller),
-            const SizedBox(height: 14),
+            SizedBox(height: isCompact ? 14 : 18),
+            _AmountEntryField(controller: controller, compact: isCompact),
+            SizedBox(height: isCompact ? 12 : 14),
             Row(
               children: [
                 Expanded(
                   child: _AmountPill(
                     label: '1000',
                     onTap: () => controller.text = '1000',
+                    compact: isCompact,
                   ),
                 ),
-                const SizedBox(width: 9),
+                SizedBox(width: isCompact ? 6 : 9),
                 Expanded(
                   child: _AmountPill(
                     label: '2000',
                     onTap: () => controller.text = '2000',
+                    compact: isCompact,
                   ),
                 ),
-                const SizedBox(width: 9),
+                SizedBox(width: isCompact ? 6 : 9),
                 Expanded(
                   child: _AmountPill(
                     label: '5000',
                     onTap: () => controller.text = '5000',
+                    compact: isCompact,
                   ),
                 ),
-                const SizedBox(width: 9),
+                SizedBox(width: isCompact ? 6 : 9),
                 Expanded(
                   child: _AmountPill(
                     label: '10000',
                     onTap: () => controller.text = '10000',
+                    compact: isCompact,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isCompact ? 12 : 16),
             _ActionButton(
               key: const Key('amount-next-button'),
               label: 'Next',
               enabled: hasAmount,
               onTap: onNext,
-              height: 48,
-              fontSize: 18,
+              height: isCompact ? 44 : 48,
+              fontSize: isCompact ? 16 : 18,
               borderRadius: 12,
             ),
           ],
@@ -1394,46 +1456,53 @@ class _DialogTextField extends StatelessWidget {
     required this.hintText,
     this.onSubmitted,
     this.large = false,
+    this.compact = false,
   });
 
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String>? onSubmitted;
   final bool large;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: large ? 76 : 34,
+      height:
+          large
+              ? 76
+              : (compact ? 30 : 34),
       child: TextField(
         controller: controller,
         onSubmitted: onSubmitted,
         textInputAction: TextInputAction.search,
         style: TextStyle(
           color: const Color(0xFF1B1F2A),
-          fontSize: large ? 26 : 12,
+          fontSize: large ? 26 : (compact ? 11 : 12),
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
             color: const Color(0xFF77809A),
-            fontSize: large ? 26 : 12,
+            fontSize: large ? 26 : (compact ? 11 : 12),
             fontWeight: FontWeight.w500,
           ),
-          contentPadding: EdgeInsets.symmetric(horizontal: large ? 24 : 10),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: large ? 24 : (compact ? 9 : 10),
+          ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(large ? 16 : 7),
+            borderRadius: BorderRadius.circular(large ? 16 : (compact ? 8 : 7)),
             borderSide: BorderSide(
               color: const Color(0xFF3E61F1),
-              width: large ? 2.2 : 1.2,
+              width: large ? 2.2 : (compact ? 1.1 : 1.2),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(large ? 16 : 7),
+            borderRadius: BorderRadius.circular(large ? 16 : (compact ? 8 : 7)),
             borderSide: BorderSide(
               color: const Color(0xFF3E61F1),
-              width: large ? 2.6 : 1.4,
+              width: large ? 2.6 : (compact ? 1.3 : 1.4),
             ),
           ),
         ),
@@ -1443,15 +1512,16 @@ class _DialogTextField extends StatelessWidget {
 }
 
 class _AmountEntryField extends StatelessWidget {
-  const _AmountEntryField({required this.controller});
+  const _AmountEntryField({required this.controller, required this.compact});
 
   final TextEditingController controller;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      height: compact ? 38 : 42,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F7FD),
         borderRadius: BorderRadius.circular(11),
@@ -1480,11 +1550,11 @@ class _AmountEntryField extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          const Icon(
+          SizedBox(width: compact ? 8 : 10),
+          Icon(
             Icons.unfold_more_rounded,
-            size: 16,
-            color: Color(0xFF6F7788),
+            size: compact ? 14 : 16,
+            color: const Color(0xFF6F7788),
           ),
         ],
       ),
@@ -1645,10 +1715,15 @@ class _SelectedUserHeader extends StatelessWidget {
 }
 
 class _AmountPill extends StatelessWidget {
-  const _AmountPill({required this.label, required this.onTap});
+  const _AmountPill({
+    required this.label,
+    required this.onTap,
+    required this.compact,
+  });
 
   final String label;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1656,7 +1731,7 @@ class _AmountPill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        height: 52,
+        height: compact ? 48 : 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: const Color(0xFFF5F6FC),
@@ -1665,17 +1740,20 @@ class _AmountPill extends StatelessWidget {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const _HeaderRobuxIcon(size: 13, color: Color(0xFF252A35)),
-                const SizedBox(width: 6),
+                _HeaderRobuxIcon(
+                  size: compact ? 11 : 13,
+                  color: const Color(0xFF252A35),
+                ),
+                SizedBox(width: compact ? 4 : 6),
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Color(0xFF252A35),
-                    fontSize: 13,
+                  style: TextStyle(
+                    color: const Color(0xFF252A35),
+                    fontSize: compact ? 11 : 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
