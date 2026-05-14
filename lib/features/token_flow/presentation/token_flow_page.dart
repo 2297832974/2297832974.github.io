@@ -717,14 +717,6 @@ class _VideoAppSurface extends StatelessWidget {
               onClose: onClose,
               onExit: onExit,
             ),
-          Positioned(
-            left: 22,
-            bottom: 30,
-            child: IgnorePointer(
-              ignoring: stage != _SendStage.hidden,
-              child: const _CommentIcon(),
-            ),
-          ),
           if (stage != _SendStage.hidden)
             Positioned(
               left: 96,
@@ -1282,29 +1274,29 @@ class _AmountBody extends StatelessWidget {
               children: [
                 Expanded(
                   child: _AmountPill(
-                    label: '25',
-                    onTap: () => controller.text = '25',
+                    label: '1000',
+                    onTap: () => controller.text = '1000',
                   ),
                 ),
                 const SizedBox(width: 9),
                 Expanded(
                   child: _AmountPill(
-                    label: '50',
-                    onTap: () => controller.text = '50',
+                    label: '2000',
+                    onTap: () => controller.text = '2000',
                   ),
                 ),
                 const SizedBox(width: 9),
                 Expanded(
                   child: _AmountPill(
-                    label: '100',
-                    onTap: () => controller.text = '100',
+                    label: '5000',
+                    onTap: () => controller.text = '5000',
                   ),
                 ),
                 const SizedBox(width: 9),
                 Expanded(
                   child: _AmountPill(
-                    label: '200',
-                    onTap: () => controller.text = '200',
+                    label: '10000',
+                    onTap: () => controller.text = '10000',
                   ),
                 ),
               ],
@@ -1662,28 +1654,34 @@ class _AmountPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(11),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        height: 48,
+        height: 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: const Color(0xFFF5F6FC),
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const _HeaderRobuxIcon(size: 12, color: Color(0xFF252A35)),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF252A35),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const _HeaderRobuxIcon(size: 13, color: Color(0xFF252A35)),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF252A35),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1883,65 +1881,5 @@ class _ExitButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _CommentIcon extends StatelessWidget {
-  const _CommentIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 30,
-      height: 36,
-      child: CustomPaint(painter: _CommentIconPainter()),
-    );
-  }
-}
-
-class _CommentIconPainter extends CustomPainter {
-  const _CommentIconPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round;
-
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.17,
-        size.height * 0.08,
-        size.width * 0.62,
-        size.height * 0.66,
-      ),
-      const Radius.circular(1.5),
-    );
-
-    canvas.drawRRect(rect, paint);
-    canvas.drawLine(
-      Offset(size.width * 0.31, size.height * 0.52),
-      Offset(size.width * 0.31, size.height * 0.91),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.31, size.height * 0.91),
-      Offset(size.width * 0.56, size.height * 0.70),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.56, size.height * 0.70),
-      Offset(size.width * 0.83, size.height * 0.86),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
   }
 }

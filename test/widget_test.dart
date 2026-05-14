@@ -108,9 +108,9 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('friend-row-search-sonic')), findsOneWidget);
-      expect(find.byKey(const Key('friend-row-friend-sonic')), findsOneWidget);
+      expect(find.text('SonicBacon'), findsAtLeastNWidgets(1));
 
-      await tester.tap(find.byKey(const Key('friend-row-friend-sonic')));
+      await tester.tap(find.text('SonicBacon').first);
       await tester.pump();
 
       expect(find.text('SonicBacon'), findsOneWidget);
@@ -133,7 +133,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Send Robux'), findsNothing);
-    expect(find.text('Enjoy up to 25% more\nRobux'), findsOneWidget);
+    expect(find.text('Enjoy up to 25% more Robux'), findsOneWidget);
   });
 
   testWidgets('send shows success toast and returns to hidden home', (

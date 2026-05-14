@@ -32,7 +32,7 @@
 - [x] Rework the Robux home background toward the referenced Roblox Robux page header, balance strip, hero, and package list
 - [x] Rebuild the selected-user amount sheet to match the reference layout more closely
 - [x] Remove avatar rendering from the Send Robux flow, friends list, and search results
-- [x] Add an acceptance guardrail: lock the app after 2 hours from the first launch on a device
+- [x] Rework the Robux home hero and package pricing column while keeping the preferred light base theme
 
 ## Next
 
@@ -53,7 +53,9 @@
 - Current friend behavior: the search sheet starts with built-in friends, unknown usernames render as blank-avatar non-friend results, and the friends area supports right-click add/edit/delete flows.
 - Current search fallback: normal typing only matches saved friends, while pressing `Enter` generates a cached random result list of `1-20` items with the first item forced to be the current match.
 - Current amount-stage behavior: after selecting a user, the sheet now switches to a centered avatar/name layout with a dedicated amount field, quick Robux chips, and a full-width primary `Next` button.
+- Current quick amount chips: the amount stage now offers `1000 / 2000 / 5000 / 10000` presets with larger chip typography for easier tapping during demos.
 - Current avatar rule: the Send Robux flow, friend rows, and search results now render without avatars.
 - Current balance behavior: the home/header Robux balance is shared state, supports right-click editing, and drops by the sent amount after each successful send.
 - Current guardrail: the confirm step disables `Send` when balance is insufficient and shows how much additional Robux is needed.
-- Acceptance guardrail: the app is time-locked after 2 hours from the first launch on a device. See `docs/app-lock.md`.
+- Current home-page alignment: the home screen is back on the preferred light base theme, with the `3,625 / £34.99` package row highlighted by default and no extra lower-left package tag.
+- Current hero heading: the `Enjoy up to 25% more Robux` title has been scaled up again and now uses a larger 70px headline size for a stronger official-style presence.

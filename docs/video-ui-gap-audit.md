@@ -47,11 +47,13 @@ Observed states:
 - The confirm step now blocks sending when the shared balance is too low and surfaces the Robux shortfall inline.
 - The selected-user amount stage now uses a centered avatar/name composition, dedicated amount field, Robux quick chips, and a larger primary button closer to the reference frame.
 - The Send Robux flow now omits avatar rendering in the friends list, search results, and selected-user states.
+- The Robux home background now stays on the lighter in-app theme instead of the temporary dark official-page treatment.
 - Typography now uses a bundled Gotham-like stand-in font (`Montserrat`), but sizes/weights/spacing still need frame-level tuning.
 - The Robux currency icon now uses a custom double-hexagon mark instead of the generic system icon in both the top navigation and package areas.
 - Search behavior now distinguishes between saved friends and non-friends, but it is still local mock data rather than a real platform friend source.
 - Amount flow layout is now closer to the reference, but it still does not represent the different partially typed amount frames and avatar detail well.
 - User avatar rendering is intentionally removed from the Send Robux flow for the current restoration target.
+- The home page is still not fully 1:1 with the target look: top-header proportions, exact typeface metrics, and package-card vertical rhythm still need refinement.
 - The Robux background page now includes a closer Roblox-style header, balance strip, hero, and yen package list, but spacing and icon detail still need frame-level refinement.
 - The bottom comment icon is still only approximate.
 - The lower-left comment icon now uses a custom line drawing closer to the dense video frames instead of a generic Material icon.

@@ -25,7 +25,6 @@ flutter run
 ## Documentation
 
 - [TODO](docs/TODO.md)
-- [Acceptance app lock](docs/app-lock.md)
 - [Video UI restoration plan](docs/video-ui-restoration-plan.md)
 - [Video UI gap audit](docs/video-ui-gap-audit.md)
 - [Project baseline](docs/project-baseline.md)
