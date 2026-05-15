@@ -79,3 +79,4 @@
 - Current edit interaction: web now uses long-press for balance and friend management, while desktop app builds keep the same flows plus right-click as a shortcut.
 - Current mobile toast behavior: the success toast now uses a compact-device width constraint instead of desktop-only side insets, so phones keep the full `You sent ... Robux` copy visible instead of collapsing to the check icon.
 - Current keyboard avoidance: the Send Robux overlays now reduce their top offset against `MediaQuery.viewInsets.bottom`, so amount and search dialogs shift upward when a mobile keyboard opens instead of being covered.
+- Current dialog placement: both Send Robux dialog variants now start vertically centered on narrow/mobile viewports and lift upward only when the keyboard would otherwise cover them.

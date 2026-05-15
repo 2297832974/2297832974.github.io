@@ -227,6 +227,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('mobile search dialog stays vertically centered by default', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(const TokenBuyApp());
+    await tester.tap(find.byKey(const Key('open-send-dialog-button')));
+    await tester.pumpAndSettle();
+
+    final headerRect = tester.getRect(find.text('Send Robux').last);
+    final listRect = tester.getRect(
+      find.byKey(const Key('friends-empty-zone')),
+    );
+    final viewportHeight =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final dialogCenterY = (headerRect.top + listRect.bottom) / 2;
+    final viewportCenterY = viewportHeight / 2;
+
+    expect((dialogCenterY - viewportCenterY).abs(), lessThan(110));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('send is disabled when balance is insufficient', (
     WidgetTester tester,
   ) async {
