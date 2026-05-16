@@ -686,7 +686,6 @@ class _VideoAppSurface extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 430;
     final palette = RobuxUiPalette.of(context);
-    final toastTop = isCompact ? 82.0 : 92.0;
     final toastWidth = math.min(228.0, math.max(140.0, screenWidth - 44));
 
     return Container(
@@ -708,9 +707,9 @@ class _VideoAppSurface extends StatelessWidget {
           if (showSuccessToast)
             Positioned.fill(
               child: Align(
-                alignment: Alignment.topCenter,
+                alignment: Alignment.center,
                 child: Padding(
-                  padding: EdgeInsets.only(top: toastTop, left: 22, right: 22),
+                  padding: EdgeInsets.symmetric(horizontal: isCompact ? 22 : 0),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: toastWidth),
                     child: _SuccessToast(
