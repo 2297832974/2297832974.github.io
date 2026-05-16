@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/robux_ui_palette.dart';
 import 'widgets/adaptive_action_menu.dart';
 import 'widgets/robux_home_page.dart';
 
@@ -684,6 +685,7 @@ class _VideoAppSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 430;
+    final palette = RobuxUiPalette.of(context);
     final toastTop = isCompact ? 82.0 : 92.0;
     final toastWidth = math.min(228.0, math.max(140.0, screenWidth - 44));
 
@@ -702,9 +704,7 @@ class _VideoAppSurface extends StatelessWidget {
             onEditBalanceRequested: onEditBalanceRequested,
           ),
           if (stage != _SendStage.hidden)
-            Positioned.fill(
-              child: Container(color: Colors.black.withValues(alpha: 0.26)),
-            ),
+            Positioned.fill(child: Container(color: palette.overlayScrim)),
           if (showSuccessToast)
             Positioned.fill(
               child: Align(
@@ -981,6 +981,7 @@ class _SendRobuxDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSearchStage = stage == _SendStage.search;
     final isCompact = MediaQuery.sizeOf(context).width < 430;
+    final palette = RobuxUiPalette.of(context);
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -990,7 +991,7 @@ class _SendRobuxDialog extends StatelessWidget {
         isSearchStage ? (isCompact ? 14 : 18) : (isCompact ? 12 : 14),
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.dialogBackground,
         borderRadius: BorderRadius.circular(
           isSearchStage ? (isCompact ? 18 : 20) : (isCompact ? 12 : 13),
         ),
@@ -1065,6 +1066,7 @@ class _DialogHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 430;
     final enableSecondaryTap = supportsDesktopSecondaryActions(context);
+    final palette = RobuxUiPalette.of(context);
     final displayBalance =
         large
             ? _formatRobuxAmount('$robuxBalance')
@@ -1074,7 +1076,7 @@ class _DialogHeader extends StatelessWidget {
       children: [
         _HeaderRobuxIcon(
           size: large ? 24 : (isCompact ? 13 : 14),
-          color: const Color(0xFF1E222B),
+          color: palette.textPrimary,
         ),
         SizedBox(width: large ? 10 : (isCompact ? 5 : 6)),
         Expanded(
@@ -1082,7 +1084,7 @@ class _DialogHeader extends StatelessWidget {
             'Send Robux',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: const Color(0xFF1E222B),
+              color: palette.textPrimary,
               fontSize: large ? 28 : (isCompact ? 16 : 18),
               fontWeight: large ? FontWeight.w900 : FontWeight.w800,
               letterSpacing: large ? -0.4 : -0.2,
@@ -1101,13 +1103,13 @@ class _DialogHeader extends StatelessWidget {
             children: [
               _HeaderRobuxIcon(
                 size: large ? 18 : (isCompact ? 11 : 12),
-                color: const Color(0xFF1E222B),
+                color: palette.textPrimary,
               ),
               SizedBox(width: large ? 9 : (isCompact ? 3 : 4)),
               Text(
                 displayBalance,
                 style: TextStyle(
-                  color: const Color(0xFF1E222B),
+                  color: palette.textPrimary,
                   fontSize: large ? 22 : (isCompact ? 11 : 12),
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
@@ -1128,7 +1130,7 @@ class _DialogHeader extends StatelessWidget {
               child: Text(
                 '×',
                 style: TextStyle(
-                  color: const Color(0xFF1E222B),
+                  color: palette.textPrimary,
                   fontSize: large ? 24 : (isCompact ? 13 : 14),
                   fontWeight: FontWeight.w500,
                 ),
@@ -1170,6 +1172,7 @@ class _SearchBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 430;
     final enableSecondaryTap = supportsDesktopSecondaryActions(context);
+    final palette = RobuxUiPalette.of(context);
     final useSubmittedResults =
         submittedSearchQuery != null &&
         submittedSearchQuery == controller.text.trim();
@@ -1228,7 +1231,7 @@ class _SearchBody extends StatelessWidget {
         Text(
           sectionTitle,
           style: TextStyle(
-            color: const Color(0xFF454B5A),
+            color: palette.textSecondary,
             fontSize: isCompact ? 11 : 12,
             fontWeight: FontWeight.w800,
           ),
@@ -1262,7 +1265,7 @@ class _SearchBody extends StatelessWidget {
                     : null,
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F8FC),
+                color: palette.dialogFieldBackground,
                 borderRadius: BorderRadius.circular(14),
               ),
               padding: EdgeInsets.symmetric(
@@ -1271,11 +1274,11 @@ class _SearchBody extends StatelessWidget {
               ),
               child:
                   scrollItems.isEmpty
-                      ? const Center(
+                      ? Center(
                         child: Text(
                           'No users found',
                           style: TextStyle(
-                            color: Color(0xFF737987),
+                            color: palette.textSecondary,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1421,6 +1424,7 @@ class _ConfirmBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     final displayAmount = _formatRobuxAmount(amount);
     final parsedAmount = int.tryParse(amount.replaceAll(',', '')) ?? 0;
     final hasEnoughBalance = parsedAmount > 0 && parsedAmount <= robuxBalance;
@@ -1433,8 +1437,8 @@ class _ConfirmBody extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           '◎ $displayAmount',
-          style: const TextStyle(
-            color: Color(0xFF1E222B),
+          style: TextStyle(
+            color: palette.textPrimary,
             fontSize: 24,
             fontWeight: FontWeight.w900,
           ),
@@ -1447,7 +1451,7 @@ class _ConfirmBody extends StatelessWidget {
           style: TextStyle(
             color:
                 hasEnoughBalance
-                    ? const Color(0xFF6E7587)
+                    ? palette.textSecondary
                     : const Color(0xFFD14C4C),
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -1491,6 +1495,7 @@ class _DialogTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return SizedBox(
       height: large ? 76 : (compact ? 30 : 34),
       child: TextField(
@@ -1498,14 +1503,14 @@ class _DialogTextField extends StatelessWidget {
         onSubmitted: onSubmitted,
         textInputAction: TextInputAction.search,
         style: TextStyle(
-          color: const Color(0xFF1B1F2A),
+          color: palette.textPrimary,
           fontSize: large ? 26 : (compact ? 11 : 12),
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
-            color: const Color(0xFF77809A),
+            color: palette.textSecondary,
             fontSize: large ? 26 : (compact ? 11 : 12),
             fontWeight: FontWeight.w500,
           ),
@@ -1540,11 +1545,12 @@ class _AmountEntryField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return Container(
       height: compact ? 38 : 42,
       padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F7FD),
+        color: palette.dialogFieldBackground,
         borderRadius: BorderRadius.circular(11),
       ),
       child: Row(
@@ -1554,15 +1560,15 @@ class _AmountEntryField extends StatelessWidget {
               key: const Key('amount-input'),
               controller: controller,
               keyboardType: TextInputType.number,
-              style: const TextStyle(
-                color: Color(0xFF1B1F2A),
+              style: TextStyle(
+                color: palette.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Amount',
                 hintStyle: TextStyle(
-                  color: Color(0xFF7A8294),
+                  color: palette.textSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1575,7 +1581,7 @@ class _AmountEntryField extends StatelessWidget {
           Icon(
             Icons.unfold_more_rounded,
             size: compact ? 14 : 16,
-            color: const Color(0xFF6F7788),
+            color: palette.textSecondary,
           ),
         ],
       ),
@@ -1601,6 +1607,7 @@ class _ResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enableSecondaryTap = supportsDesktopSecondaryActions(context);
+    final palette = RobuxUiPalette.of(context);
 
     Future<void> showActions([Offset? globalPosition]) async {
       if (onEdit == null && onDelete == null) {
@@ -1661,7 +1668,7 @@ class _ResultRow extends StatelessWidget {
                     Text(
                       user.name,
                       style: TextStyle(
-                        color: const Color(0xFF171B24),
+                        color: palette.textPrimary,
                         fontSize: compact ? 12 : 18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1669,7 +1676,7 @@ class _ResultRow extends StatelessWidget {
                     Text(
                       user.handle,
                       style: TextStyle(
-                        color: const Color(0xFF7B8190),
+                        color: palette.textSecondary,
                         fontSize: compact ? 11 : 14,
                         fontWeight: compact ? FontWeight.w500 : FontWeight.w600,
                         height: 1.15,
@@ -1699,6 +1706,7 @@ class _SelectedUserHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     final amountLabel =
         amountText == null || amountText == '0' ? '0' : amountText!;
 
@@ -1708,7 +1716,7 @@ class _SelectedUserHeader extends StatelessWidget {
           user.name,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color(0xFF171B24),
+            color: palette.textPrimary,
             fontSize: showMeta ? 14 : 16,
             fontWeight: FontWeight.w900,
           ),
@@ -1736,8 +1744,8 @@ class _SelectedUserHeader extends StatelessWidget {
           Text(
             '${user.handle}\nJoined in 2021',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF7B8190),
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 9,
               fontWeight: FontWeight.w600,
               height: 1.2,
@@ -1762,6 +1770,7 @@ class _AmountPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1769,7 +1778,7 @@ class _AmountPill extends StatelessWidget {
         height: compact ? 48 : 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F6FC),
+          color: palette.dialogFieldBackground,
           borderRadius: BorderRadius.circular(12),
         ),
         child: FittedBox(
@@ -1781,13 +1790,13 @@ class _AmountPill extends StatelessWidget {
               children: [
                 _HeaderRobuxIcon(
                   size: compact ? 11 : 13,
-                  color: const Color(0xFF252A35),
+                  color: palette.textPrimary,
                 ),
                 SizedBox(width: compact ? 4 : 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: const Color(0xFF252A35),
+                    color: palette.textPrimary,
                     fontSize: compact ? 11 : 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1808,11 +1817,12 @@ class _SuccessToast extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return Container(
       height: 36,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xEA1D1F27),
+        color: palette.toastBackground,
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
           BoxShadow(

@@ -80,3 +80,4 @@
 - Current mobile toast behavior: the success toast now uses a compact-device width constraint instead of desktop-only side insets, so phones keep the full `You sent ... Robux` copy visible instead of collapsing to the check icon.
 - Current keyboard avoidance: the Send Robux overlays now reduce their top offset against `MediaQuery.viewInsets.bottom`, so amount and search dialogs shift upward when a mobile keyboard opens instead of being covered.
 - Current dialog placement: both Send Robux dialog variants now start vertically centered on narrow/mobile viewports and lift upward only when the keyboard would otherwise cover them.
+- Current theme settings: the top-right Settings menu now lets users toggle between light and dark themes (persisted via `shared_preferences`), and the Robux home + send flows reuse a shared palette so both themes render correctly.

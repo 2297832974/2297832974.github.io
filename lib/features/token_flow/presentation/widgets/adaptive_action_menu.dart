@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/robux_ui_palette.dart';
+
 class AdaptiveActionItem<T> {
   const AdaptiveActionItem({
     required this.value,
@@ -43,6 +45,7 @@ Future<T?> showAdaptiveActionMenu<T>(
   }
 
   if (supportsDesktopSecondaryActions(context) && globalPosition != null) {
+    final palette = RobuxUiPalette.of(context);
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
 
     return showMenu<T>(
@@ -63,7 +66,7 @@ Future<T?> showAdaptiveActionMenu<T>(
                   color:
                       item.isDestructive
                           ? const Color(0xFFC83C3C)
-                          : const Color(0xFF252A35),
+                          : palette.textPrimary,
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -72,7 +75,7 @@ Future<T?> showAdaptiveActionMenu<T>(
                     color:
                         item.isDestructive
                             ? const Color(0xFFC83C3C)
-                            : const Color(0xFF252A35),
+                            : palette.textPrimary,
                   ),
                 ),
               ],
@@ -86,12 +89,13 @@ Future<T?> showAdaptiveActionMenu<T>(
     context: context,
     backgroundColor: Colors.transparent,
     builder: (context) {
+      final palette = RobuxUiPalette.of(context);
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: palette.dialogBackground,
               borderRadius: BorderRadius.circular(18),
               boxShadow: const [
                 BoxShadow(
@@ -111,8 +115,8 @@ Future<T?> showAdaptiveActionMenu<T>(
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            color: Color(0xFF20232B),
+                          style: TextStyle(
+                            color: palette.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                           ),
@@ -120,7 +124,7 @@ Future<T?> showAdaptiveActionMenu<T>(
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: Color(0xFFE8EAF0)),
+                  Divider(height: 1, color: palette.divider),
                 ],
                 for (final item in items)
                   ListTile(
@@ -129,7 +133,7 @@ Future<T?> showAdaptiveActionMenu<T>(
                       color:
                           item.isDestructive
                               ? const Color(0xFFC83C3C)
-                              : const Color(0xFF252A35),
+                              : palette.textPrimary,
                     ),
                     title: Text(
                       item.label,
@@ -137,7 +141,7 @@ Future<T?> showAdaptiveActionMenu<T>(
                         color:
                             item.isDestructive
                                 ? const Color(0xFFC83C3C)
-                                : const Color(0xFF252A35),
+                                : palette.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

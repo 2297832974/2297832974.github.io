@@ -284,4 +284,16 @@ void main() {
     final decoration = sendContainer.decoration! as BoxDecoration;
     expect(decoration.color, const Color(0xFFE1E3EA));
   });
+
+  testWidgets('settings menu toggles theme', (WidgetTester tester) async {
+    await tester.pumpWidget(const TokenBuyApp());
+
+    await tester.tap(find.byKey(const Key('open-settings-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+  });
 }

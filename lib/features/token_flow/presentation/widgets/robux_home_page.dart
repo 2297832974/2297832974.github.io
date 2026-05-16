@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'adaptive_action_menu.dart';
+import '../../../../core/theme/robux_ui_palette.dart';
+import '../../../../core/theme/theme_settings_scope.dart';
 
 class RobuxHomePage extends StatelessWidget {
   const RobuxHomePage({
@@ -22,9 +24,10 @@ class RobuxHomePage extends StatelessWidget {
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 430;
         final heroHeadingStyle = _heroHeadingStyle(context, isCompact);
+        final palette = RobuxUiPalette.of(context);
 
         return Container(
-          color: const Color(0xFFFAFAFB),
+          color: palette.pageBackground,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -37,7 +40,7 @@ class RobuxHomePage extends StatelessWidget {
               ),
               Expanded(
                 child: CustomPaint(
-                  painter: const _SubtleGridPainter(),
+                  painter: _SubtleGridPainter(palette: palette),
                   child: ListView(
                     physics: const ClampingScrollPhysics(),
                     padding: EdgeInsets.fromLTRB(
@@ -55,7 +58,7 @@ class RobuxHomePage extends StatelessWidget {
                       Text(
                         'Robux packages',
                         style: TextStyle(
-                          color: const Color(0xFF20232B),
+                          color: palette.textPrimary,
                           fontSize: isCompact ? 20 : 24,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
@@ -76,6 +79,7 @@ class RobuxHomePage extends StatelessWidget {
 }
 
 TextStyle _heroHeadingStyle(BuildContext context, bool isCompact) {
+  final palette = RobuxUiPalette.of(context);
   final platform = Theme.of(context).platform;
   final fontSize =
       isCompact
@@ -87,7 +91,7 @@ TextStyle _heroHeadingStyle(BuildContext context, bool isCompact) {
           };
 
   return TextStyle(
-    color: const Color(0xFF20232B),
+    color: palette.textPrimary,
     fontSize: fontSize,
     fontWeight: FontWeight.w900,
     height: isCompact ? 1.0 : 0.94,
@@ -102,9 +106,10 @@ class _RobloxHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return Container(
       height: isCompact ? 92 : 110,
-      color: const Color(0xFFFAFAFB),
+      color: palette.headerBackground,
       child: Column(
         children: [
           SizedBox(
@@ -115,7 +120,7 @@ class _RobloxHeader extends StatelessWidget {
                 Icon(
                   Icons.menu_rounded,
                   size: isCompact ? 24 : 28,
-                  color: const Color(0xFF33363D),
+                  color: palette.iconPrimary,
                 ),
                 SizedBox(width: isCompact ? 12 : 20),
                 _RobloxTiltedLogo(isCompact: isCompact),
@@ -125,18 +130,26 @@ class _RobloxHeader extends StatelessWidget {
                 Icon(
                   Icons.search_rounded,
                   size: isCompact ? 28 : 34,
-                  color: const Color(0xFF4B4E55),
+                  color: palette.iconSecondary,
                 ),
                 SizedBox(width: isCompact ? 12 : 18),
                 _RobuxCurrencyIcon(
                   size: isCompact ? 28 : 34,
-                  color: const Color(0xFF33363D),
+                  color: palette.iconPrimary,
                 ),
                 SizedBox(width: isCompact ? 12 : 18),
-                Icon(
-                  Icons.settings_outlined,
-                  size: isCompact ? 28 : 34,
-                  color: const Color(0xFF33363D),
+                InkWell(
+                  key: const Key('open-settings-button'),
+                  onTap: () => _showSettingsSheet(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.settings_outlined,
+                      size: isCompact ? 28 : 34,
+                      color: palette.iconPrimary,
+                    ),
+                  ),
                 ),
                 SizedBox(width: isCompact ? 8 : 12),
               ],
@@ -160,11 +173,88 @@ class _RobloxHeader extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E8)),
+          Divider(height: 1, thickness: 1, color: palette.divider),
         ],
       ),
     );
   }
+}
+
+Future<void> _showSettingsSheet(BuildContext context) async {
+  final scope = ThemeSettingsScope.of(context);
+  final palette = RobuxUiPalette.of(context);
+
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: palette.dialogBackground,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x22000000),
+                  blurRadius: 28,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Settings',
+                        style: TextStyle(
+                          color: palette.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: palette.divider),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.light,
+                  groupValue: scope.themeMode,
+                  onChanged: (value) {
+                    if (value == null) return;
+                    scope.setThemeMode(value);
+                    Navigator.of(context).pop();
+                  },
+                  title: Text(
+                    'Light',
+                    style: TextStyle(color: palette.textPrimary),
+                  ),
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.dark,
+                  groupValue: scope.themeMode,
+                  onChanged: (value) {
+                    if (value == null) return;
+                    scope.setThemeMode(value);
+                    Navigator.of(context).pop();
+                  },
+                  title: Text(
+                    'Dark',
+                    style: TextStyle(color: palette.textPrimary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _HeaderTab extends StatelessWidget {
@@ -175,13 +265,14 @@ class _HeaderTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return Center(
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
           label,
           style: TextStyle(
-            color: const Color(0xFF2A2D34),
+            color: palette.textPrimary.withValues(alpha: 0.9),
             fontSize: isCompact ? 13 : 18,
             fontWeight: FontWeight.w500,
           ),
@@ -199,6 +290,7 @@ class _RobloxTiltedLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     final logoSize = isCompact ? 28.0 : 34.0;
 
     return Transform.rotate(
@@ -206,12 +298,12 @@ class _RobloxTiltedLogo extends StatelessWidget {
       child: Container(
         width: logoSize,
         height: logoSize,
-        color: const Color(0xFF33363D),
+        color: palette.logoFill,
         alignment: Alignment.center,
         child: Container(
           width: isCompact ? 7 : 9,
           height: isCompact ? 7 : 9,
-          color: const Color(0xFFFAFAFB),
+          color: palette.logoHole,
         ),
       ),
     );
@@ -225,21 +317,22 @@ class _RobloxAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     final avatarSize = isCompact ? 28.0 : 34.0;
 
     return Container(
       width: avatarSize,
       height: avatarSize,
       decoration: BoxDecoration(
-        color: const Color(0xFFE9EEF7),
+        color: palette.avatarBackground,
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFD2D5DC), width: 1),
+        border: Border.all(color: palette.avatarBorder, width: 1),
       ),
       alignment: Alignment.center,
-      child: const Text(
+      child: Text(
         'R',
         style: TextStyle(
-          color: Color(0xFF7A4B23),
+          color: palette.avatarText,
           fontSize: 18,
           fontWeight: FontWeight.w900,
         ),
@@ -264,13 +357,16 @@ class _RobuxAccountStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enableSecondaryTap = supportsDesktopSecondaryActions(context);
+    final palette = RobuxUiPalette.of(context);
 
     return Container(
       height: isCompact ? 74 : 90,
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 14 : 24),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFAFAFB),
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E5E8), width: 1)),
+      decoration: BoxDecoration(
+        color: palette.accountStripBackground,
+        border: Border(
+          bottom: BorderSide(color: palette.accountStripBorder, width: 1),
+        ),
       ),
       child: Row(
         children: [
@@ -285,7 +381,7 @@ class _RobuxAccountStrip extends StatelessWidget {
                 children: [
                   _RobuxCurrencyIcon(
                     size: isCompact ? 28 : 34,
-                    color: const Color(0xFF20232B),
+                    color: palette.textPrimary,
                   ),
                   SizedBox(width: isCompact ? 7 : 9),
                   Expanded(
@@ -295,7 +391,7 @@ class _RobuxAccountStrip extends StatelessWidget {
                       child: Text(
                         _formatCompactRobuxBalance(robuxBalance),
                         style: TextStyle(
-                          color: const Color(0xFF20232B),
+                          color: palette.textPrimary,
                           fontSize: isCompact ? 20 : 25,
                           fontWeight: FontWeight.w900,
                         ),
@@ -315,7 +411,7 @@ class _RobuxAccountStrip extends StatelessWidget {
               width: isCompact ? 82 : 92,
               height: isCompact ? 34 : 38,
               decoration: BoxDecoration(
-                color: const Color(0xFFE3E3EA),
+                color: palette.sendButtonBackground,
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
@@ -325,13 +421,13 @@ class _RobuxAccountStrip extends StatelessWidget {
                   Icon(
                     Icons.upload_rounded,
                     size: isCompact ? 16 : 18,
-                    color: const Color(0xFF20232B),
+                    color: palette.sendButtonText,
                   ),
                   SizedBox(width: isCompact ? 5 : 7),
                   Text(
                     'Send',
                     style: TextStyle(
-                      color: const Color(0xFF20232B),
+                      color: palette.sendButtonText,
                       fontSize: isCompact ? 13 : 15,
                       fontWeight: FontWeight.w900,
                     ),
@@ -352,13 +448,15 @@ String _formatCompactRobuxBalance(int balance) {
 }
 
 class _SubtleGridPainter extends CustomPainter {
-  const _SubtleGridPainter();
+  const _SubtleGridPainter({required this.palette});
+
+  final RobuxUiPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = const Color(0xFFE8E9EF).withValues(alpha: 0.52)
+          ..color = palette.gridLine
           ..strokeWidth = 0.7;
 
     for (double x = -36; x < size.width; x += 26) {
@@ -370,7 +468,7 @@ class _SubtleGridPainter extends CustomPainter {
 
     final curvePaint =
         Paint()
-          ..color = const Color(0xFFD9DBE3).withValues(alpha: 0.42)
+          ..color = palette.gridCurve
           ..style = PaintingStyle.stroke
           ..strokeWidth = 0.8;
     for (double radius = 160; radius < 540; radius += 46) {
@@ -389,6 +487,7 @@ class _RobuxPackageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
         isCompact ? 12 : 20,
@@ -397,9 +496,9 @@ class _RobuxPackageCard extends StatelessWidget {
         isCompact ? 8 : 18,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFBFBFC).withValues(alpha: 0.92),
+        color: palette.packageCardBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD7D9E1), width: 1),
+        border: Border.all(color: palette.packageCardBorder, width: 1),
       ),
       child: Column(
         children: [
@@ -475,6 +574,7 @@ class _RobuxPackageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = RobuxUiPalette.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: isCompact ? 18 : 22),
       child: Row(
@@ -482,7 +582,7 @@ class _RobuxPackageRow extends StatelessWidget {
         children: [
           _RobuxCurrencyIcon(
             size: isCompact ? 22 : 28,
-            color: const Color(0xFF20232B),
+            color: palette.textPrimary,
           ),
           SizedBox(width: isCompact ? 7 : 9),
           Expanded(
@@ -494,7 +594,7 @@ class _RobuxPackageRow extends StatelessWidget {
                 Text(
                   amount,
                   style: TextStyle(
-                    color: const Color(0xFF20232B),
+                    color: palette.textPrimary,
                     fontSize: isCompact ? 22 : 29,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.8,
@@ -502,16 +602,16 @@ class _RobuxPackageRow extends StatelessWidget {
                 ),
                 _RobuxCurrencyIcon(
                   size: isCompact ? 17 : 21,
-                  color: const Color(0xFF777C8E),
+                  color: palette.textSecondary,
                 ),
                 Text(
                   previous,
                   style: TextStyle(
-                    color: const Color(0xFF777C8E),
+                    color: palette.textSecondary,
                     fontSize: isCompact ? 15 : 18,
                     fontWeight: FontWeight.w800,
                     decoration: TextDecoration.lineThrough,
-                    decorationColor: const Color(0xFF777C8E),
+                    decorationColor: palette.textSecondary,
                     decorationThickness: 2,
                   ),
                 ),
@@ -524,14 +624,19 @@ class _RobuxPackageRow extends StatelessWidget {
             height: isCompact ? 42 : 48,
             decoration: BoxDecoration(
               color:
-                  isPrimary ? const Color(0xFF3761FF) : const Color(0xFFE4E4EA),
+                  isPrimary
+                      ? palette.pricePillPrimaryBackground
+                      : palette.pricePillBackground,
               borderRadius: BorderRadius.circular(9),
             ),
             alignment: Alignment.center,
             child: Text(
               price,
               style: TextStyle(
-                color: isPrimary ? Colors.white : const Color(0xFF20232B),
+                color:
+                    isPrimary
+                        ? palette.pricePillPrimaryText
+                        : palette.pricePillText,
                 fontSize: isCompact ? 15 : 18,
                 fontWeight: FontWeight.w900,
               ),
